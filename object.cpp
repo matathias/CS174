@@ -1,8 +1,10 @@
 /* Class file for objects.
  * 
- * This file contains the implementation for a basic object. Each object stores
- * its own position, velocity, and mass; more advanced objects can be
- * implemented as subclasses with this as the superclass.
+ * This file contains the implementation for a basic object. This object 
+ * contains no information about its physics, only about its shape and location.
+ * This is useful for things like static floors and walls.
+ *
+ * Physical objects can use this class as a superclass.
  *
  * Something something OOP.
  */
@@ -12,32 +14,19 @@
 #include <Eigen/Eigen>
 #include <iostream>
 #include <vector>
- 
-class Object
-{
-    public:
-        Object(Vector3d pos, Vector3d vel, float m);
-        void setPosition(Vector3d pos);
-        void setVelocity(Vector3d vel);
-        void setMass(float m);
-        Vector3d getPosition();
-        Vector3d getVelocity();
-        float getMass();
 
-    private:
-        Vector3d position;
-        Vector3d velocity;
-        float mass;
-}
- 
+#include "object.h"
+
 /********** Member function definitions **********/
 // Constructor
-Object::Object(Vector3d pos, Vector3d vel, float m)
+Object::Object(MatrixXd scl, MatrixXd rot, Vector3d pos, float ee, float nn)
 {
     position = pos;
-    velocity = vel;
+    scale = scl;
+    rotate = rot;
     
-    mass = m;
+    e = ee;
+    n = nn;
 }
 
 // Manipulators
@@ -46,14 +35,24 @@ void Object::setPosition(Vector3d pos)
     position = pos;
 }
 
-void Object::setVelocity(Vector3d vel)
+void Object::setScale(MatrixXd scl)
 {
-    velocity = vel;
+    scale = scl;
 }
 
-void Object::setMass(float m)
+void Object::setRotate(MatrixXd rot)
 {
-    mass = m;
+    rotate = rot;
+}
+
+void Object::setE(float ee)
+{
+    e = ee;
+}
+
+void Object::setN(float nn)
+{
+    n = nn;
 }
 
 // "Get" functions
@@ -62,12 +61,22 @@ Vector3d Object::getPosition()
     return position;
 }
 
-Vector3d Object::getVelocity()
+MatrixXd Object::getScale()
 {
-    return velocity;
+    return scale;
 }
 
-float Object::getMass()
+MatrixXd Object::getRotate()
 {
-    return mass;
+    return rotate;
+}
+
+float Object::getE()
+{
+    return e;
+}
+
+float Object::getN()
+{
+    return n;
 }
