@@ -7,48 +7,48 @@
  * Something something OOP.
  */
  
+#pragma once
+
+#include <Eigen/Eigen>
+#include <iostream>
+#include <vector>
+ 
 class Object
 {
     public:
-        Object(float *pos, float *vel, float m);
-        void setPosition(float *pos);
-        void setVelocity(float *vel);
+        Object(Vector3d pos, Vector3d vel, float m);
+        void setPosition(Vector3d pos);
+        void setVelocity(Vector3d vel);
         void setMass(float m);
-        float* getPosition();
-        float* getVelocity();
+        Vector3d getPosition();
+        Vector3d getVelocity();
         float getMass();
 
     private:
-        float position[3];
-        float velocity[3];
+        Vector3d position;
+        Vector3d velocity;
         float mass;
 }
  
 /********** Member function definitions **********/
 // Constructor
-Object::Object(float *pos, float *vel, float m)
+Object::Object(Vector3d pos, Vector3d vel, float m)
 {
-    for (int i = 0; i < 3; i++) {
-        position[i] = pos[i];
-        velocity[i] = vel[i];
-    }
+    position = pos;
+    velocity = vel;
     
     mass = m;
 }
 
 // Manipulators
-void Object::setPosition(float *pos)
+void Object::setPosition(Vector3d pos)
 {
-    position[0] = pos[0];
-    position[1] = pos[1];
-    position[2] = pos[2];
+    position = pos;
 }
 
-void Object::setVelocity(float *vel)
+void Object::setVelocity(Vector3d vel)
 {
-    velocity[0] = vel[0];
-    velocity[1] = vel[1];
-    velocity[2] = vel[2];
+    velocity = vel;
 }
 
 void Object::setMass(float m)
@@ -57,3 +57,17 @@ void Object::setMass(float m)
 }
 
 // "Get" functions
+Vector3d Object::getPosition()
+{
+    return position;
+}
+
+Vector3d Object::getVelocity()
+{
+    return velocity;
+}
+
+float Object::getMass()
+{
+    return mass;
+}
