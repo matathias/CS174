@@ -80,7 +80,7 @@ double square(double val);
 
 // Returns the distance between a and b. Assumes a and b represent points (or
 // the endpoints of the vectors, whatever)
-double distance(Tvec *a, Tvec *b);
+double distance(Vector3d a, Vector3d b);
 
 // Returns true if every value of a is zero
-bool vecIsZero(Tvec *a);
+bool vecIsZero(Vector3d a);
