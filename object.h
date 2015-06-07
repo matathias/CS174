@@ -19,8 +19,12 @@ class Object
         MatrixXd getRotate();
         float getE();
         float getN();
+        vector<HE*>* getHalfEdges();
+        vector<HEF*>* getHalfFaces();
+        vector<HEV*>* getHalfVertices();
+        vector<Vector3d>* getNormals();
         bool isPhysical();
-        bool collisionTest(Object *o);
+        bool collidedWith(Object *o);
         
     protected:
         // Transforms

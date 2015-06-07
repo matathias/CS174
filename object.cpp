@@ -98,8 +98,28 @@ bool Object::isPhysical()
     return physical;
 }
 
+vector<HE*>* getHalfEdges()
+{
+    return halfEdges;
+}
+
+vector<HEF*>* getHalfFaces()
+{
+    return halfFaces;
+}
+
+vector<HEV*>* getHalfVertices()
+{
+    return halfVertices;
+}
+
+vector<Vector3d>* getNormals()
+{
+    return normals;
+}
+
 // Collision test function
-bool Object::collisionTest(Object *o)
+bool Object::collidedWith(Object *o)
 {
     /* TODO Implement collision detection here */
     return false;
