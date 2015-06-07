@@ -20,6 +20,7 @@ PhysicalObject::PhysicalObject(MatrixXd scl, MatrixXd rot, Vector3d pos, float e
 {
     velocity = vel;
     mass = m;
+    physical = true;
 }
 
 // Manipulator functions

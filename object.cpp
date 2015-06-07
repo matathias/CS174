@@ -27,6 +27,8 @@ Object::Object(MatrixXd scl, MatrixXd rot, Vector3d pos, float ee, float nn)
     
     e = ee;
     n = nn;
+    
+    physical = false;
 }
 
 // Manipulators
@@ -79,4 +81,16 @@ float Object::getE()
 float Object::getN()
 {
     return n;
+}
+
+bool Object::isPhysical()
+{
+    return physical;
+}
+
+// Collision test function
+bool Object::collisionTest(Object *o)
+{
+    /* TODO Implement collision detection here */
+    return false;
 }

@@ -17,6 +17,8 @@ class Object
         MatrixXd getRotate();
         float getE();
         float getN();
+        bool isPhysical();
+        bool collisionTest(Object *o);
         
     protected:
         // Transforms
@@ -27,4 +29,8 @@ class Object
         // These two exponents are for if we're using superquadrics
         float e;
         float n;
+        
+        // Helps determine if the object is static or not, since c++ doesn't
+        // seem to have object-type detection
+        bool physical;
 }
