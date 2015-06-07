@@ -44,7 +44,9 @@ Object::Object(MatrixXd scl, MatrixXd rot, Vector3d pos, float ee, float nn)
 // Manipulators
 void Object::setPosition(Vector3d pos)
 {
+    Vector3d translation = pos - position;
     position = pos;
+    updateVerticesPos(translation);
 }
 
 void Object::setScale(MatrixXd scl)
@@ -192,4 +194,15 @@ void intializeHalfEdge(MatrixXd scl, MatrixXd rot, Vector3d pos)
     }
 
     findAllVertexNormals(normals, halfVertices);
+}
+
+// Update the object's vertices with the given translation vector
+void updateVerticesPos(Vector3d trans)
+{
+    for (int i = 0; i < halfVertices->size(); i++) {
+        HEV *vert = halfVertices->at(i);
+        vert->x = vert->x + trans(0);
+        vert->y = vert->y + trans(1);
+        vert->z = vert->z + trans(2);
+    }
 }
