@@ -4,8 +4,6 @@
  * This file is the main file that actually runs the game/physics engine.
  */
 
-#include "util.h"
-#include "halfEdge.h"
 #include <GL/glew.h>
 #include <GL/glut.h>
 #include <math.h>
@@ -15,6 +13,11 @@
 #include <vector>
 #include <algorithm>
 #include <stdexcept>
+
+#include "object.h"
+#include "physicalObject.h"
+#include "util.h"
+#include "halfEdge.h"
 
 using namespace std;
 
@@ -36,6 +39,8 @@ void init_lights();
 void set_lights();
 void draw_objects();
 
+void physics();
+
 void onMouse(int button, int state, int x, int y);
 void onMotion(int x, int y);
 Vector3d get_arcball_vector(int x, int y);
@@ -44,7 +49,6 @@ void key_pressed(unsigned char key, int x, int y);
 double rad2deg(double);
 double deg2rad(double);
 
-void create_parametric();
 void create_lights();
 
 void parseArguments(int argc, char* argv[]);
@@ -60,10 +64,6 @@ double xt = 0.0, yt = 0.0, zt = 0.0; // Translation
 double xmin = -1.2, xmax = 1.2, ymin = -1.2, ymax = 1.2, zmin = -1.2, zmax = 1.2;
 int Nu = 80, Nv = 40;
 
-Vector3d bVec(5.0, 0.1, 0.1);
-Vector3d aVec(-1.0, 0.0, 0.0);
-double rayLength = 0.5, normalLength = 0.5;
-
 // Tolerance value for the Newton's Method update rule
 double epsilon = 0.00001;
 
@@ -76,16 +76,14 @@ bool wireframe = false;
 // Toggle for printing debug values. Set at program initiation.
 bool printDebug = false;
 
-// Vectors to store data with a Half Edge Data Structure
-vector<HE*> * halfEdges = new vector<HE*>; //stores all of the half edges
-vector<HEF*> * halfFaces = new vector<HEF*>; //stores all of the faces
-vector<HEV*> * halfVertices = new vector<HEV*>; //stores all of the vertices
-
-//stores all of the normal vectors of the vertices
-vector<Tvec*> * normals = new vector<Tvec*>; 
-
 // Matrix to store total rotations from the arcball
 MatrixXd total_rotate = MatrixXd::Identity(4,4);
+
+// Vector to store the objects in the game
+vector<PhysicalObject> objects;
+// Vector to store the objects that represent the world boundaries
+// (ground, walls, etc.)
+vector<Object> boundaries;
 
 /*----- Arcball Globals -----*/
 int last_mx = 0, last_my = 0, cur_mx = 0, cur_my = 0;
@@ -174,6 +172,9 @@ void display(void)
                        total_rotate(0,3), total_rotate(1,3), total_rotate(2,3), total_rotate(3,3)};
     glMultMatrixf(rot);
     
+    // Handle all of the position and velocity updates
+    physics();
+    
     // Draw the scene
     set_lights();
     draw_objects();
@@ -234,9 +235,13 @@ void draw_objects()
 
     glMaterialf(GL_FRONT, GL_SHININESS, 8);
 
-    // If parametricToggle is true then render the parametric shape
-    if(parametricToggle)
-    {        
+    // Draw every object in the scene
+    for (int j = 0; j < objects.size(); j++)
+    {
+        vector<HEF*> *halfFaces = objects.at(j).getHalfFaces();
+        vector<HEV*> *halfVertices = objects.at(j).getHalfVertices();
+        vector<Vector3d> *normals = objects.at(j).getNormals();
+        
         for (int i = 0; i < halfFaces->size(); i++)
         {
             int ind1 = halfFaces->at(i)->a;
@@ -244,55 +249,91 @@ void draw_objects()
             int ind3 = halfFaces->at(i)->c;
         
             glPushMatrix();
-            if (wireframe)
-            {
-                glLineWidth(1.0);
-                glColor4f(0, 0, 0, 0.2);
-                glBegin(GL_LINE_LOOP);
+            
+            // Draw the face
+            glColor4f(1.0, 0, 0, 0.2);
+            glBegin(GL_TRIANGLES);
 
-                glNormal3f(normals->at(ind1)->x, normals->at(ind1)->y,
-                           normals->at(ind1)->z);
-                glVertex3f(halfVertices->at(ind1)->x, halfVertices->at(ind1)->y,
-                           halfVertices->at(ind1)->z);
+            glNormal3f(normals->at(ind1)(0), normals->at(ind1)(1),
+                       normals->at(ind1)(2));
+            glVertex3f(halfVertices->at(ind1)->x, halfVertices->at(ind1)->y,
+                       halfVertices->at(ind1)->z);
 
-                glNormal3f(normals->at(ind2)->x, normals->at(ind2)->y,
-                           normals->at(ind2)->z);
-                glVertex3f(halfVertices->at(ind2)->x, halfVertices->at(ind2)->y,
-                           halfVertices->at(ind2)->z);
+            glNormal3f(normals->at(ind2)(0), normals->at(ind2)(1),
+                       normals->at(ind2)(2));
+            glVertex3f(halfVertices->at(ind2)->x, halfVertices->at(ind2)->y,
+                       halfVertices->at(ind2)->z);
 
-                glNormal3f(normals->at(ind3)->x, normals->at(ind3)->y,
-                           normals->at(ind3)->z);
-                glVertex3f(halfVertices->at(ind3)->x, halfVertices->at(ind3)->y,
-                           halfVertices->at(ind3)->z);
+            glNormal3f(normals->at(ind3)(0), normals->at(ind3)(1),
+                       normals->at(ind3)(2));
+            glVertex3f(halfVertices->at(ind3)->x, halfVertices->at(ind3)->y,
+                       halfVertices->at(ind3)->z);
 
-                glEnd();
-            }
-            else
-            {
-                glColor4f(1.0, 0.0, 0.0, 0.2);
-                glBegin(GL_TRIANGLES);
-
-                glNormal3f(normals->at(ind1)->x, normals->at(ind1)->y,
-                           normals->at(ind1)->z);
-                glVertex3f(halfVertices->at(ind1)->x, halfVertices->at(ind1)->y,
-                           halfVertices->at(ind1)->z);
-
-                glNormal3f(normals->at(ind2)->x, normals->at(ind2)->y,
-                           normals->at(ind2)->z);
-                glVertex3f(halfVertices->at(ind2)->x, halfVertices->at(ind2)->y,
-                           halfVertices->at(ind2)->z);
-
-                glNormal3f(normals->at(ind3)->x, normals->at(ind3)->y,
-                           normals->at(ind3)->z);
-                glVertex3f(halfVertices->at(ind3)->x, halfVertices->at(ind3)->y,
-                           halfVertices->at(ind3)->z);
-
-                glEnd();
-            }
+            glEnd();
+            
             glPopMatrix();
         }
     }
 }
+
+/* This function handles all of the "physics" that occur in a single frame, i.e.
+ * collision detection and updating objects' position and velocity.
+ */
+void physics()
+{
+    vector<Vector3d> netNewSpeeds = new vector<Vector3d>;
+    for (int i = 0; i < objects.size(); i++) {
+        Vector3d zeros(0,0,0);
+        netNewSpeeds.push_back(zeros);
+    }
+    
+    /* Handle collision detection first. If two objects collide, calculate their
+     * updated speed and add it to their "net new speed". */
+    // The currently implemented collision detection is a naive check-every-
+    // -object-against-every-other-object algorithm. We will want to change
+    // this later.
+    for (int i = 0; i < objects.size(); i++) {
+        // Don't want to make object comparisons that have already happened,
+        // hence starting the second loop at i instead of 0. The +1 is so
+        // we don't compare an object to itself.
+        for (int j = i+1; j < objects.size(); j++) {
+            if(objects.at(i).collidedWith(objects.at(j))) {
+                float mI = objects.at(i).getMass();
+                float mJ = objects.at(j).getMass();
+                Vector3d vI = objects.at(i).getVelocity();
+                Vector3d vJ = objects.at(j).getVelocity();
+                
+                Vector3d newVI = (mI - mJ) / (mI + mJ) * (vI - vJ) + vJ;
+                Vector3d newVJ = (2 * mI) / (mI + mJ) * (vI - vJ) + vJ;
+                
+                netNewSpeeds.at(i) = netNewSpeeds.at(i) + newVI;
+                newNewSpeeds.at(j) = netNewSpeeds.at(j) + newVJ;
+            }
+        }
+    }
+    
+    // After all collisions have been checked, apply the "net new speed" to
+    // every object (but only if the netNewSpeed vector is non-zero; if it /is/
+    // zero then the object did not collide with anything).
+    // This would also be a good place to add a slowdown factor
+    for (int i = 0; i < objects.size(); i++) {
+        if(!vecIsZero(netNewSpeeds.at(i))) {
+            objects.at(i).setVelocity(netNewSpeeds.at(i));
+        }
+    }
+    
+    // Calculate the objects' new positions based on this speed, checking all
+    // the way to make sure that the objects do not clip out of the world
+    // (This loop could probably be merged with the one previous...)
+    for (int i = 0; i < objects.size(); i++) {
+        Vector3d pos = objects.at(i).getPosition();
+        Vector3d vel = objects.at(i).getVelocity();
+        objects.at(i).setPosition(pos + vel);
+        // TODO: ensure the objects don't move past any of the world boundaries
+         
+    }
+}
+
 
 // Simple function to convert an angle in degrees to radians
 double deg2rad(double angle)
@@ -385,86 +426,6 @@ void key_pressed(unsigned char key, int x, int y)
         wireframe = !wireframe;
         glutPostRedisplay();
     }
-}
-
-// Uses the Nu and Nv values to create a parametric shape and then store it in
-// a half-edge structure.
-void create_parametric()
-{
-    // Calculate the transformations
-    Vector3d translate(xt, yt, zt);
-    MatrixXd scale = matrix4to3(get_scale_mat(a, b, c));
-    MatrixXd rotate = matrix4to3(get_rotate_mat(r1, r2, r3, theta));
-
-    float du = 2 * M_PI / (float) Nu;
-    float dv = M_PI / (float) Nv;
-    vector<point *> *pts = new vector<point *>;
-    vector<face *> *faces = new vector<face *>;
-
-    // Find all of the 3d points based on the (u,v) parametric values.
-    for (int i = 1; i <= Nu; i++)
-    {
-        for (int j = 0; j <= Nv; j++)
-        {
-            float u = -M_PI + du * i;
-            float v = -M_PI / 2 + dv * j;
-            Vector3d para = psq(u,v,(float)n,(float)e);
-            para = scale * para;
-            para = rotate * para;
-            para = translate + para;
-
-            point* thispt = new point;
-            thispt->x = para(0);
-            thispt->y = para(1);
-            thispt->z = para(2);
-
-            pts->push_back(thispt);
-        }
-    } 
-
-    // Because we added the points to pts in a straight-forward manner, we can
-    // easily determine what the vertices of the faces should be using the
-    // parameterization.
-    int ind1 = 0;
-    for (int i = 0; i < Nu; i++)
-    {
-        for (int j = 0; j <= Nv; j++)
-        {
-            face* face1 = new face;
-            face* face2 = new face;
-
-            ind1 = (ind1 + 1) % (Nu * (Nv+1));
-            if (ind1 % (Nv+1) != Nv)
-            {
-                int ind2 = (ind1 + 1) % (Nu * (Nv+1));
-                int ind3 = (ind1 + Nv+1) % (Nu * (Nv+1));
-                int ind4 = (ind1 + 1 + Nv+1) % (Nu * (Nv+1));
-
-                face1->ind1 = ind1;
-                face1->ind2 = ind2;
-                face1->ind3 = ind3;
-
-                face2->ind1 = ind3;
-                face2->ind2 = ind2;
-                face2->ind3 = ind4;
-
-                faces->push_back(face1);
-                faces->push_back(face2);
-            }
-        }
-    }
-
-    // Store the points and faces to a half-edge data structure.
-    createHalfVertices(pts, halfVertices);
-    createHalfOthers(faces, halfEdges, halfFaces);
-    int successful = orientFace(halfFaces->at(0), halfFaces, halfVertices);
-    if(successful != 0)
-    {
-        cerr << "Non-orientable surface." << endl;
-        exit(1);
-    }
-
-    findAllVertexNormals(normals, halfVertices);
 }
 
 void create_lights()
