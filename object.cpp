@@ -16,6 +16,7 @@
 #include <vector>
 #include <math.h>
 #define _USE_MATH_DEFINES
+#include <float.h>
 
 // parameterization constants; the higher they are, the more polygons objects
 // will have
@@ -100,27 +101,28 @@ bool Object::isPhysical()
     return physical;
 }
 
-vector<HE*>* getHalfEdges()
+vector<HE*>* Object::getHalfEdges()
 {
     return halfEdges;
 }
 
-vector<HEF*>* getHalfFaces()
+vector<HEF*>* Object::getHalfFaces()
 {
     return halfFaces;
 }
 
-vector<HEV*>* getHalfVertices()
+vector<HEV*>* Object::getHalfVertices()
 {
     return halfVertices;
 }
 
-vector<Vector3d>* getNormals()
+vector<Vector3d>* Object::getNormals()
 {
     return normals;
 }
 
 // Collision test function
+// Collision detection makes use of the GJK Algorithm
 bool Object::collidedWith(Object *o)
 {
     /* TODO Implement collision detection here */
@@ -128,7 +130,7 @@ bool Object::collidedWith(Object *o)
 }
 
 // Fill the object's half-edge data structure
-void intializeHalfEdge(MatrixXd scl, MatrixXd rot, Vector3d pos)
+void Object::intializeHalfEdge(MatrixXd scl, MatrixXd rot, Vector3d pos)
 {
     float du = 2 * M_PI / (float) Nu;
     float dv = M_PI / (float) Nv;
@@ -197,7 +199,7 @@ void intializeHalfEdge(MatrixXd scl, MatrixXd rot, Vector3d pos)
 }
 
 // Update the object's vertices with the given translation vector
-void updateVerticesPos(Vector3d trans)
+void Object::updateVerticesPos(Vector3d trans)
 {
     for (int i = 0; i < halfVertices->size(); i++) {
         HEV *vert = halfVertices->at(i);
@@ -205,4 +207,30 @@ void updateVerticesPos(Vector3d trans)
         vert->y = vert->y + trans(1);
         vert->z = vert->z + trans(2);
     }
+}
+
+// Return the vertex that is farthest in the direction given by d
+// This function is used primarily by the collision detection algorithm
+Vector3d Object::getFarthestPointInDirection(Vector3d d)
+{
+    d.normalize();  // make sure that d is a unit vector
+    Vector3d ret(0, 0, 0);
+    float magnitude = FLT_MIN;
+    for (int i = 0; i < halfVertices.size(); i++) {
+        Vector3d tmp(halfVertices.at(i)->x, halfVertices.at(i)->y,
+                     halfVertices.at(i)->z);
+        // Project the point onto the direction vector
+        tmp = tmp.dot(d) * d;
+        // The magnitude is mathematically identical to the norm; so get the
+        // norm and compare to the magnitude. If it's greater, then this point
+        // is the farthest point in the direction of d (so far)
+        if (tmp.norm() > magnitude) {
+            ret(0) = halfVertices.at(i)->x;
+            ret(1) = halfVertices.at(i)->y;
+            ret(2) = halfVertices.at(i)->z;
+            magnitude = tmp.norm();
+        }
+    }
+    
+    return ret;
 }

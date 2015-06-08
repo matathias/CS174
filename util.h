@@ -71,6 +71,13 @@ double gPrime(Vector3d vec, Vector3d a, double e, double n);
 /* Unit normal vector at a point on the superquadric */
 Vector3d unitNormal(MatrixXd r, Vector3d vec1, Vector3d vec2, double tt, double e, double n);
 
+/* These functions exist primarily for use in the collision detection algorithm.
+ */
+Vector3d tripleProduct(Vector3d a, Vector3d b, Vector3d c);
+Vector3d support(Object *a, Object *b, Vector3d d);
+// Returns true if the given simplex s contains the origin, and false otherwise
+bool containsOrigin(vector<Vector3d> *s, Vector3d *d);
+
 // These functions exist for use in halfEdge.cpp
 /*
  */

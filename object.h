@@ -25,6 +25,7 @@ class Object
         vector<Vector3d>* getNormals();
         bool isPhysical();
         bool collidedWith(Object *o);
+        Vector3d getFarthestPointInDirection(Vector3d d);
         
     protected:
         // Transforms

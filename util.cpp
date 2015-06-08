@@ -4,6 +4,7 @@
  */
 
 #include "util.h"
+#include "Object.h"
 #include <math.h>
 #include <float.h>
 
@@ -322,6 +323,99 @@ Vector3d unitNormal(MatrixXd r, Vector3d vec1, Vector3d vec2, double tt, double 
     Vector3d nor = r * isqGradient(findRay(vec1, vec2, tt), e, n);
     nor.normalize();
     return nor;
+}
+
+/* These functions exist primarily for use in the collision detection algorithm.
+ */
+Vector3d tripleProduct(Vector3d a, Vector3d b, Vector3d c)
+{
+    return b * (c.dot(a)) - a * (c.dot(b));
+}
+
+Vector3d support(Object *a, Object *b, Vector3d d)
+{
+    Vector3d p1 = a->getFarthestPointInDirection(d);
+    Vector3d p2 = b->getFarthestPointInDirection(d);
+    
+    return p1 - p2;
+}
+
+// Returns true if the given simplex s contains the origin, and false otherwise
+bool containsOrigin(vector<Vector3d> *s, Vector3d *d)
+{
+    // Get the last point added to the simplex
+    Vector3d a = s->back();
+    
+    Vector3d ao = a * -1;
+    
+    if (s->size() == 4) { // tetrahedron case (a at 3, b at 2, c at 1, d at 0)
+        // get edges AB and AC from triangle ABC
+        Vector3d ab = s->at(2) - a; // b - a
+        Vector3d ac = s->at(1) - a; // c - a
+        // Get the face normal
+        Vector3d abcNormal = ab.cross(ac);
+        // If the origin is in the region bordering triangle ABC
+        if (abcNormal.dot(ao) > 0) {
+            // Remove point d
+            s->erase(0);
+            // set the new direction to abcNormal
+            *d = abcNormal;
+        }
+        else {
+            // get edges DB and DA from triangle ABD
+            Vector3d db = s->at(2) - s->at(0); // b - d
+            Vector3d da = a - s->at(0); // a - d
+            // Get the face normal
+            Vector3d abdNormal = db.cross(da);
+            // If the origin is in the region bordering triangle ABD
+            if (abdNormal.dot(ao) > 0) {
+                // Remove point c
+                s->erase(1);
+                // set the new direction to abdNormal
+                *d = abdNormal;
+            }
+            else {
+                // get edge DC from triangle ACD (we already have da)
+                Vector3d dc = s->at(1) - s->at(0); // c - d
+                // Get the face normal
+                Vector3d acdNormal = da.cross(dc);
+                // If the origin is in the region bordering triangle ACD
+                if (acdNormal.dot(ao) > 0) {
+                    // remove point b
+                    s->erase(2);
+                    // set the new direction to acdNormal
+                    *d = acdNormal;
+                }
+                else {
+                    // We now know that the origin is inside the simplex
+                    return true;
+                }
+            }
+        }
+    
+    }
+    else if (s->size() == 3) { // triangle case (a at 2, b at 1, c at 0)
+        // Get the normal vector to the triangle
+        Vector3d ab = s->at(1) - a; // b - a
+        Vector3d ac = s->at(0) - a; // c - a
+        Vector3d normal = ab.cross(ac);
+        // See if the normal is in the direction of the origin. If it isn't,
+        // negate it so that it is
+        if (normal.dot(ao) < 0) {
+            normal = normal * -1;
+        }
+        // set this vector as the new direction
+        *d = normal;
+    }
+    else { // line segment case (a at 1, b at 0)
+        Vector3d b = s->at(0);
+        Vector3d ab = b - a;
+        // Set the direction to perpendicular to ab in the direction of the
+        // origin
+        *d = tripleProduct(ab, ao, ab);
+    }
+    
+    return false;
 }
 
 // These functions exist for use in halfEdge.cpp
