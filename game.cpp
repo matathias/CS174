@@ -78,8 +78,9 @@ MatrixXd total_rotate = MatrixXd::Identity(4,4);
 
 // Vector to store the objects in the game
 vector<PhysicalObject> objects;
-// Player character. For now the player is represented by a single object
-PhysicalObject player;
+// Player character. The player is always the first element in the objects
+// vector.
+int player = 0;
 // Vector to store the objects that represent the world boundaries
 // (ground, walls, etc.)
 vector<BoundaryObject> boundaries;
@@ -240,6 +241,45 @@ void draw_objects()
         vector<HEF*> *halfFaces = objects.at(j).getHalfFaces();
         vector<HEV*> *halfVertices = objects.at(j).getHalfVertices();
         vector<Vector3d> *normals = objects.at(j).getNormals();
+        
+        for (int i = 0; i < halfFaces->size(); i++)
+        {
+            int ind1 = halfFaces->at(i)->a;
+            int ind2 = halfFaces->at(i)->b;
+            int ind3 = halfFaces->at(i)->c;
+        
+            glPushMatrix();
+            
+            // Draw the face
+            glColor4f(1.0, 0, 0, 0.2);
+            glBegin(GL_TRIANGLES);
+
+            glNormal3f(normals->at(ind1)(0), normals->at(ind1)(1),
+                       normals->at(ind1)(2));
+            glVertex3f(halfVertices->at(ind1)->x, halfVertices->at(ind1)->y,
+                       halfVertices->at(ind1)->z);
+
+            glNormal3f(normals->at(ind2)(0), normals->at(ind2)(1),
+                       normals->at(ind2)(2));
+            glVertex3f(halfVertices->at(ind2)->x, halfVertices->at(ind2)->y,
+                       halfVertices->at(ind2)->z);
+
+            glNormal3f(normals->at(ind3)(0), normals->at(ind3)(1),
+                       normals->at(ind3)(2));
+            glVertex3f(halfVertices->at(ind3)->x, halfVertices->at(ind3)->y,
+                       halfVertices->at(ind3)->z);
+
+            glEnd();
+            
+            glPopMatrix();
+        }
+    }
+    // Draw the boundaries
+    for (int j = 0; j < boundaries.size(); j++)
+    {
+        vector<HEF*> *halfFaces = boundaries.at(j).getHalfFaces();
+        vector<HEV*> *halfVertices = boundaries.at(j).getHalfVertices();
+        vector<Vector3d> *normals = boundaries.at(j).getNormals();
         
         for (int i = 0; i < halfFaces->size(); i++)
         {
@@ -458,7 +498,9 @@ void key_pressed(unsigned char key, int x, int y)
     {
         exit(0);
     }
-    // Find a way to make all movement relative to the camera
+    // Find a way to make all movement relative to the camera. Also need to move
+    // the camera with the player.
+    Vector3d newVel = SLOWDOWN * objects.at(player).getVelocity();
     if (key == 'w' || key == 'W') // Player move forward
     {
         // Move the player forward
@@ -475,6 +517,7 @@ void key_pressed(unsigned char key, int x, int y)
     {
         // Move the player right
     }
+    objects.at(player).setVelocity(newVel);
     glutPostRedisplay();
 }
 

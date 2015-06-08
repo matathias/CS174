@@ -10,7 +10,7 @@ Goals -
  + object collision detection <- DONE
 + Draw "stage" (add walls/invisible floor to test collision/gravity on)
 + Implement interactivity on objects (allow "character" object to have velocity adjusted with keypress reads)
-+ (Re-)Implement camera, which would just be arcball or something around PC object <- Basically DONE
++ (Re-)Implement camera, which would just be arcball or something around PC object (this'll be a little more complicated than arc ball since we want to rotate around the player instead of having the camera pivot in place...)
 + Try to implement high-end video game physics algorithms linked in paper in original proposal <- PROBABLY IMPORTANT? THIS IS PROBABLY WHAT AL CARES ABOUT
 
 === Fallback complete^^^ ===
