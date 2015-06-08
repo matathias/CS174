@@ -121,11 +121,39 @@ vector<Vector3d>* Object::getNormals()
     return normals;
 }
 
-// Collision test function
-// Collision detection makes use of the GJK Algorithm
+// Collision detection function (makes use of the GJK Algorithm)
 bool Object::collidedWith(Object *o)
 {
-    /* TODO Implement collision detection here */
+    // Get the initial direction, which will be the vector between the two
+    // objects' centers
+    Vector3d d = position - o->getPosition();
+    // Create the simplex vector and add the first point to it
+    vector<Vector3d> simplex = new vector<Vector3d>;
+    simplex.push_back(support(this, o, d));
+    // negate d
+    d = d * -1;
+    // start looping until we determine whether or not a collision has occured
+    while(true) {
+        // Add a new point to the simplex
+        simplex.push_back(support(this, o, d));
+        // make sure that this point actually passed the origin
+        if (simplex.back().dot(d) <= 0) {
+            // If this point is not past the origin then the objects have not
+            // collided, due to properties of the Minkowski Sum
+            return false;
+        }
+        else {
+            // determine if the origin is within the current simplex. If it
+            // isn't, then containsOrigin will modify d to contain a new
+            // direction that will be used at the beginning of the loop
+            if (containsOrigin(&simplex, &d)) {
+                // Collision!
+                return true;
+            }
+        }
+    }
+    
+    // We should never get here, but just so the compiler never complains...
     return false;
 }
 

@@ -297,7 +297,7 @@ void physics()
         // hence starting the second loop at i instead of 0. The +1 is so
         // we don't compare an object to itself.
         for (int j = i+1; j < objects.size(); j++) {
-            if(objects.at(i).collidedWith(objects.at(j))) {
+            if(objects.at(i).collidedWith(&objects.at(j))) {
                 float mI = objects.at(i).getMass();
                 float mJ = objects.at(j).getMass();
                 Vector3d vI = objects.at(i).getVelocity();
