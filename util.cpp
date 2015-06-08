@@ -119,29 +119,6 @@ MatrixXd matrix4to3(MatrixXd mat)
     return mat2;
 }
 
-/* Implicit Superquadric function. */
-double isq(Vector3d vec, double e, double n)
-{
-    // Test for n = 0 now to prevent divide-by-zero errors.
-    if (n == 0)
-        return FLT_MAX;
-    
-    //double zTerm = pow(pow(vec(2), 2.0), 1.0 / (double) n);
-    double zTerm = pow(vec(2), 2.0 / (double) n);
-
-    // Test for e = 0 now to prevent divide-by-zero errors.
-    if (e == 0)
-        return zTerm;
-
-    //double xTerm = pow(pow(vec(0), 2.0), 1.0 / (double) e);
-    //double yTerm = pow(pow(vec(1), 2.0), 1.0 / (double) e);
-    double xTerm = pow(vec(0), 2.0 / (double) e);
-    double yTerm = pow(vec(1), 2.0 / (double) e);
-    double xyTerm = pow(xTerm + yTerm, e / (double) n);
-
-    return xyTerm + zTerm - 1.0;
-}
-
 /* Parametric cosine analog function. */
 double cosine(double u, double e)
 {
@@ -182,147 +159,12 @@ Vector3d psq(float u, float v, float n, float e)
     return vec;
 }
 
-/* Ray Equation */
-Vector3d findRay(Vector3d a, Vector3d b, double t)
-{
-    return (a * t) + b;
-}
-
-/* Apply the Inverse Transform to a to get a new, usable a. */
-Vector3d newa(MatrixXd unScale, MatrixXd unRotate, Vector3d a)
-{
-    return unScale * (unRotate * a);
-}
-
-/* Apply the Inverse Transform to b to get a new, usable b. */
-Vector3d newb(MatrixXd unScale, MatrixXd unRotate, Vector3d unTranslate, Vector3d b)
-{
-    return unScale * (unRotate * (b + unTranslate));
-}
-
-/* Finds the scalar coefficients of the quadratic equation with the two given
- * vectors. If positiveb is true then the returned coeffs will all be multiplied
- * by -1 if be is negative, to ensure that b is positive. */
-Vector3d findCoeffs(Vector3d a, Vector3d b, bool positiveb)
-{
-    Vector3d coeffs(a.dot(a), 2 * a.dot(b), b.dot(b) - 3);
-    if (positiveb)
-    {
-        if (coeffs(1) < 0)
-            coeffs = coeffs * -1;
-    }
-    return coeffs;
-}
-
-/* Finds the roots of the quadratic with the coefficients specified by the input
- * Vector3d. If one of the roots is complex then FLT_MAX is returned instead. */
-Vector2d findRoots(Vector3d coeffs)
-{
-    double tMinus = 0.0, tPlus = 0.0;
-    double interior = pow(coeffs(1), 2) - (4 * coeffs(0) * coeffs(2));
-    if (interior < 0)
-    {
-        tMinus = tPlus = FLT_MAX;
-    }
-    else
-    {
-        tMinus = (-coeffs(1) - sqrt(interior)) / (double) (2 * coeffs(0));
-        tPlus = (2 * coeffs(2)) / (double) (-coeffs(1) - sqrt(interior));
-    }
-    Vector2d roots(tMinus, tPlus);
-    return roots;
-}
-
-/* Uses Newton's method to find the t value at which a ray hits the superquadric.
- * If the ray actually misses the superquadric then FLT_MAX is returned instead.*/
-double updateRule(Vector3d a, Vector3d b, double e, double n, double t, double epsilon)
-{
-    Vector3d vec = findRay(a, b, t);
-    double gP = gPrime(vec, a, e, n);
-    double gPPrevious = gP;
-    double g = 0.0;
-    double tnew = t, told = t;
-    bool stopPoint = false;
-
-    while (!stopPoint)
-    {
-        told = tnew;
-        vec = findRay(a, b, told);
-        gP = gPrime(vec, a, e, n);
-        g = isq(vec, e, n);
-
-        if ((g - epsilon) <= 0)
-        {
-            stopPoint = true;
-        }
-        else if (sign(gP) != sign(gPPrevious) || (gP == 0 && (g - epsilon) > 0))
-        {
-            stopPoint = true;
-            tnew = FLT_MAX;
-        }
-        else
-        {
-            tnew = told - (g / gP);
-            gPPrevious = gP;
-        }
-    }
-    return tnew;
-}
-
 /* Returns -1 for negative numbers, 1 for positive numbers, and 0 for zero. */
 int sign(double s)
 {
     if(s > 0) return 1;
     if(s < 0) return -1;
     return 0;
-}
-
-/* Gradient of the isq function. */
-Vector3d isqGradient(Vector3d vec, double e, double n)
-{
-    double xval = 0.0, yval = 0.0, zval = 0.0;
-    // Check for n = 0 to prevent divide-by-zero errors
-    if (n == 0)
-    {
-        cout << "n is zero!" << endl;
-        xval = yval = zval = FLT_MAX;
-    }
-    // Check for e = 0 to prevent divide-by-zero errors
-    else if (e == 0)
-    {
-        cout << "e is zero!" << endl;
-        xval = yval = FLT_MAX;
-        zval = (2 * vec(2) * pow(pow(vec(2), 2), ((double) 1 / n) - 1)) / (double) n;
-    }
-    else
-    {
-        double xterm = pow(vec(0), (double) 2 / e);
-        double yterm = pow(vec(1), (double) 2 / e);
-        double xyterm = pow(xterm + yterm, ((double) e / n) - 1);
-        double x2term = (2 * pow(vec(0), ((double) 2 / e) - 1));
-        double y2term = (2 * pow(vec(1), ((double) 2 / e) - 1));
-        xval = x2term * xyterm / (double) n;
-        yval = y2term * xyterm / (double) n;
-        zval = (2 * pow(vec(2), ((double) 2 / n) - 1)) / (double) n;
-    }
-    
-    Vector3d res(xval, yval, zval);
-    return res;
-}
-
-/* Derivative of the isq function. */
-double gPrime(Vector3d vec, Vector3d a, double e, double n)
-{
-    return a.dot(isqGradient(vec, e, n));
-}
-
-/* Unit normal vector at a point on the superquadric */
-Vector3d unitNormal(MatrixXd r, Vector3d vec1, Vector3d vec2, double tt, double e, double n)
-{
-    //Vector3d nor = newb(s, r, t, isqGradient(vec, e, n));
-    Vector3d nor = r * isqGradient(findRay(vec1, vec2, tt), e, n);
-    nor.normalize();
-    return nor;
 }
 
 /* These functions exist primarily for use in the collision detection algorithm.
