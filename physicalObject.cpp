@@ -25,23 +25,23 @@ PhysicalObject::PhysicalObject(MatrixXd scl, MatrixXd rot, Vector3d pos, float e
 }
 
 // Manipulator functions
-void setVelocity(Vector3d vel)
+void PhysicalObject::setVelocity(Vector3d vel)
 {
     velocity = vel;
 }
 
-void setMass(float m)
+void PhysicalObject::setMass(float m)
 {
     mass = m;
 }
 
 // "Get" functions
-Vector3d getVelocity()
+Vector3d PhysicalObject::getVelocity()
 {
     return velocity;
 }
 
-float getMass()
+float PhysicalObject::getMass()
 {
     return mass;
 }

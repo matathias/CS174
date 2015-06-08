@@ -16,8 +16,23 @@
 
 #include "object.h"
 #include "physicalObject.h"
+#include "boundaryObject.h"
 #include "util.h"
 #include "halfEdge.h"
+
+/*** Movement constants ***/
+/* Keep in mind that positions are updated every frame, not every second, hence
+ * the seemingly low values */
+// Every frame an object's velocity is multiplied by this amount
+#define SLOWDOWN 0.999f
+// Don't make g 9.8 because this applies to every frame, not every second...
+#define G .98f
+// Value added to the player's velocity when the player controls their character
+#define MOVEMENTACCEL 0.001f
+// Maximum movement speed for the player character
+#define MOVEMENTSPEEDMAX 1
+
+#define EPSILON 0.00001f
 
 using namespace std;
 
@@ -51,17 +66,9 @@ double deg2rad(double);
 
 void create_lights();
 
-void parseArguments(int argc, char* argv[]);
-
 /******************************************************************************/
 // Global variables
 int xres = 500, yres = 500;
-
-// Value for whether or not the parametric shape should be drawn.
-bool parametricToggle = true;
-// Value for whether the parametric shape should be drawn as a wireframe or a
-// solid (transparent) object.
-bool wireframe = false;
 
 // Toggle for printing debug values. Set at program initiation.
 bool printDebug = false;
@@ -71,9 +78,11 @@ MatrixXd total_rotate = MatrixXd::Identity(4,4);
 
 // Vector to store the objects in the game
 vector<PhysicalObject> objects;
+// Player character. For now the player is represented by a single object
+PhysicalObject player;
 // Vector to store the objects that represent the world boundaries
 // (ground, walls, etc.)
-vector<Object> boundaries;
+vector<BoundaryObject> boundaries;
 
 /*----- Arcball Globals -----*/
 int last_mx = 0, last_my = 0, cur_mx = 0, cur_my = 0;
@@ -302,25 +311,68 @@ void physics()
         }
     }
     
-    // After all collisions have been checked, apply the "net new speed" to
-    // every object (but only if the netNewSpeed vector is non-zero; if it /is/
-    // zero then the object did not collide with anything).
-    // This would also be a good place to add a slowdown factor
+    // Apply the new net speed to every object. Also ensure that the objects
+    // aren't leaving the world boundaries, and apply any slowdown or gravity
+    // constants.
     for (int i = 0; i < objects.size(); i++) {
-        if(!vecIsZero(netNewSpeeds.at(i))) {
-            objects.at(i).setVelocity(netNewSpeeds.at(i));
+        Vector3d newSpeed = netNewSpeeds.at(i);
+        // If the newSpeed vector is zero, then this object didn't collide with
+        // anything. Maintain its velocity.
+        if(vecIsZero(newSpeed)) {
+            newSpeed = objects.at(i).getVelocity();
         }
-    }
+        // Apply a slow down factor in every direction, to simulate air
+        // resistance and friction
+        newSpeed = newSpeed * SLOWDOWN;
+        
+        bool applyGravity = true;
+        
+        // Check if the object has hit any world boundaries, and if it has,
+        // alter the object's velocity accordingly.
+        // The current method of during this assumes that all world boundaries
+        // are rigid walls at 90 degree angles. If you want slopes, you'll need
+        // something more complex...
+        for (int j = 0; j < boundaries.size(); j++) {
+            if(objects.at(i).collidedWith(&boundaries.at(j))) {
+                float dampen = boundaries.at(j).getDampening();
+                switch(boundaries.at(j).getBoundaryType()) {
+                    case GROUND:
+                        // If the velocity is low enough, set it to 0 so that
+                        // the object stops bouncing (we assume that the
+                        // velocity here is negative if the object is hitting
+                        // the ground)
+                        if (newSpeed(1) + EPSILON > 0) {
+                            newSpeed(1) = 0;
+                            // Don't bother applying acceleration due to gravity
+                            // if the object is at vertical rest on the ground
+                            applyGravity = false;
+                        }
+                    case CEILING:
+                        newSpeed(1) = newSpeed(1) * -1 * dampen;
+                        break;
+                    case WALL_LEFT:
+                    case WALL_RIGHT:
+                        newSpeed(0) = newSpeed(0) * -1 * dampen;
+                        break;
+                    case WALL_FRONT:
+                    case WALL_BACK:
+                        newSpeed(2) = newSpeed(2) * -1 * dampen;
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+        
+        if(applyGravity) {
+            // Apply gravity
+            newSpeed(1) = newSpeed(1) - G;
+        }
     
-    // Calculate the objects' new positions based on this speed, checking all
-    // the way to make sure that the objects do not clip out of the world
-    // (This loop could probably be merged with the one previous...)
-    for (int i = 0; i < objects.size(); i++) {
+        objects.at(i).setVelocity(newSpeed);
+        
         Vector3d pos = objects.at(i).getPosition();
-        Vector3d vel = objects.at(i).getVelocity();
-        objects.at(i).setPosition(pos + vel);
-        // TODO: ensure the objects don't move past any of the world boundaries
-         
+        objects.at(i).setPosition(pos + newSpeed);
     }
 }
 
@@ -402,20 +454,28 @@ Vector3d get_arcball_vector(int x, int y)
 // Function to handle key-press events.
 void key_pressed(unsigned char key, int x, int y)
 {
-    if (key == 'q' || key == 'Q')
+    if (key == 'q' || key == 'Q') // Quit
     {
         exit(0);
     }
-    if (key == 't' || key == 'T')
+    // Find a way to make all movement relative to the camera
+    if (key == 'w' || key == 'W') // Player move forward
     {
-        parametricToggle = !parametricToggle;
-        glutPostRedisplay();
+        // Move the player forward
     }
-    if ((key == 'w' || key == 'W') && parametricToggle)
+    if (key == 'a' || key == 'A') // Player move left
     {
-        wireframe = !wireframe;
-        glutPostRedisplay();
+        // Move the player left
     }
+    if (key == 's' || key == 'S') // Player move backward
+    {
+        // Move the player backward
+    }
+    if (key == 'd' || key == 'd') // Player move right
+    {
+        // Move the player right
+    }
+    glutPostRedisplay();
 }
 
 void create_lights()
