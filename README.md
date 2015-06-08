@@ -7,6 +7,7 @@ Goals -
 + Give objects physics variables <- DONE
 + Implement gravity / acceleration in the redraw function / some "physics" subfunction that updates on redraw
 + Implement object collision / collision physics
+ + object collision detection <- DONE
 + Draw "stage" (add walls/invisible floor to test collision/gravity on)
 + Implement interactivity on objects (allow "character" object to have velocity adjusted with keypress reads)
 + (Re-)Implement camera, which would just be arcball or something around PC object <- Basically DONE
