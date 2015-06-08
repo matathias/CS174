@@ -60,6 +60,7 @@ void onMouse(int button, int state, int x, int y);
 void onMotion(int x, int y);
 Vector3d get_arcball_vector(int x, int y);
 void key_pressed(unsigned char key, int x, int y);
+Vector3d get_camera_direction();
 
 double rad2deg(double);
 double deg2rad(double);
@@ -413,6 +414,12 @@ void physics()
         
         Vector3d pos = objects.at(i).getPosition();
         objects.at(i).setPosition(pos + newSpeed);
+        // Need to move the camera with the player
+        if (i == player) {
+            cam_position[0] += newSpeed(0);
+            cam_position[1] += newSpeed(1);
+            cam_position[2] += newSpeed(2);
+        }
     }
 }
 
@@ -498,27 +505,67 @@ void key_pressed(unsigned char key, int x, int y)
     {
         exit(0);
     }
-    // Find a way to make all movement relative to the camera. Also need to move
-    // the camera with the player.
-    Vector3d newVel = SLOWDOWN * objects.at(player).getVelocity();
-    if (key == 'w' || key == 'W') // Player move forward
-    {
-        // Move the player forward
+    // Only do all of the player-move calculations if the button press
+    // corresponds to a player move
+    if (key == 'w' || key == 'W' || key == 'a' || key == 'A' || key == 's' ||
+        key == 'S' || key == 'd' || key == 'D') {
+        // Find a way to make all movement relative to the camera. (Don't 
+        // actually change the player's position here, only their velocity. The 
+        // physics() function handles changing their position)
+        Vector3d newVel = objects.at(player).getVelocity();
+        // Get the total camera transform, so we can project down to the x- and
+        // z-axis to get the "forward" direction
+        Vector3d camDirection = get_camera_direction();
+        if (key == 'w' || key == 'W') // Player move forward
+        {
+            // Nothing to do here
+        }
+        if (key == 'a' || key == 'A') // Player move left
+        {
+            // Rotate the direction vector 90 degrees left
+            camDirection = get_rotate_mat(0, 1, 0, deg2rad(90)) * camDirection;
+        }
+        if (key == 's' || key == 'S') // Player move backward
+        {
+            // negate the direction vector
+            camDirection = camDirection * -1;
+        }
+        if (key == 'd' || key == 'd') // Player move right
+        {
+            // Rotate the direction vector 90 degrees right
+            camDirection = get_rotate_mat(0, 1, 0, deg2rad(270)) * camDirection;
+        }
+        camDirection(1) = 0; // get rid of the y-component
+        camDirection.normalize();
+        // We can do this outside the if statements since all the if statements
+        // take care of is changing the direction of the vector accordingly
+        Vector3d vel = newVel + MOVEMENTACCEL * camDirection;
+        // Only add the speed if the total velocity does not exceed the
+        // maximum
+        if (vel.norm() < MOVEMENTSPEEDMAX) {
+            newVel = vel;
+        }
+        objects.at(player).setVelocity(newVel);
     }
-    if (key == 'a' || key == 'A') // Player move left
-    {
-        // Move the player left
-    }
-    if (key == 's' || key == 'S') // Player move backward
-    {
-        // Move the player backward
-    }
-    if (key == 'd' || key == 'd') // Player move right
-    {
-        // Move the player right
-    }
-    objects.at(player).setVelocity(newVel);
     glutPostRedisplay();
+}
+
+Vector3d get_camera_direction()
+{
+    Vector4d direction(0, 0, 0, 1);
+
+    MatrixXd cameraT = get_translate_mat(cam_position[0],
+                                         cam_position[1],
+                                         cam_position[2]);
+    MatrixXd cameraR = get_rotate_mat(cam_orientation_axis[0],
+                                      cam_orientation_axis[1],
+                                      cam_orientation_axis[2],
+                                      deg2rad(cam_orientation_angle));
+    MatrixXd cameraC = cameraT * cameraR * total_rotate;
+    
+    direction = cameraC * direction;
+    
+    return vector4to3(direction);
 }
 
 void create_lights()
