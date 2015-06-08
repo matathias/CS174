@@ -307,7 +307,7 @@ void physics()
                 Vector3d newVJ = (2 * mI) / (mI + mJ) * (vI - vJ) + vJ;
                 
                 netNewSpeeds.at(i) = netNewSpeeds.at(i) + newVI;
-                newNewSpeeds.at(j) = netNewSpeeds.at(j) + newVJ;
+                netNewSpeeds.at(j) = netNewSpeeds.at(j) + newVJ;
             }
         }
     }
