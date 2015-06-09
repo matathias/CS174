@@ -24,13 +24,13 @@
 /* Keep in mind that positions are updated every frame, not every second, hence
  * the seemingly low values */
 // Every frame an object's velocity is multiplied by this amount
-#define SLOWDOWN 0.999f
+#define SLOWDOWN 0.99f
 // Don't make g 9.8 because this applies to every frame, not every second...
-#define G .3f
+#define G .25f
 // Value added to the player's velocity when the player controls their character
-#define MOVEMENTACCEL 0.001f
+#define MOVEMENTACCEL 0.01f
 // Maximum movement speed for the player character
-#define MOVEMENTSPEEDMAX 1
+#define MOVEMENTSPEEDMAX 2
 
 #define EPSILON 0.00001f
 
@@ -74,6 +74,8 @@ void create_lights();
 int xres = 500, yres = 500;
 int drawState = 0;
 
+int groundtmp = 0;
+
 // Toggle for printing debug values. Set at program initiation.
 bool printDebug = false;
 
@@ -99,13 +101,13 @@ const double x_view_step = 90.0, y_view_step = 90.0;
 double x_view_angle = 0, y_view_angle = 0;
 
 /*----- Camera globals -----*/
-double cam_position[] = {0, 7, 10};
+double cam_position[] = {0, 2, 9};
 
 double cam_orientation_axis[] = {1, 1, 1};
 
 double cam_orientation_angle = 0; // degrees
 
-double near_param = 1, far_param = 20,
+double near_param = 1, far_param = 25,
       left_param = -1, right_param = 1,
       top_param = 1, bottom_param = -1;
 vector<Point_Light> lights;
@@ -121,11 +123,10 @@ void init(void)
 
     glShadeModel(GL_SMOOTH);
     glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
 
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
-
-    glEnable(GL_DEPTH_TEST);
 
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_NORMAL_ARRAY);
@@ -139,8 +140,6 @@ void init(void)
     
     setupObjects();
     create_lights();
-
-    //cam_position[2] = zmax + 1;
     
     init_lights();
 }
@@ -149,20 +148,23 @@ void init(void)
 // floor with
 void setupObjects()
 {
-    MatrixXd floorScl = matrix4to3(get_scale_mat(10, 1, 10));
+    MatrixXd floorScl = matrix4to3(get_scale_mat(10, 5, 10));
     MatrixXd floorRot = matrix4to3(get_rotate_mat(0, 1, 0, 0));
-    Vector3d floorTrans(0, 0, 0);
+    Vector3d floorTrans(0, -5, 0);
     
     MatrixXd objScl = matrix4to3(get_scale_mat(0.5, 0.5, 0.5));
     MatrixXd objRot = matrix4to3(get_rotate_mat(0, 1, 0, 0));
     Vector3d objTrans1(0, 10, 0);
+    Vector3d objTrans2(5, 10, 0);
     Vector3d objVel(0, 0, 0);
     
     BoundaryObject floor (floorScl, floorRot, floorTrans, .1, .1, GROUND, .9);
     PhysicalObject obj1 (objScl, objRot, objTrans1, 1, 1, objVel, 1);
+    PhysicalObject obj2 (objScl, objRot, objTrans2, 1, 1, objVel, 1);
     
     boundaries.push_back(floor);
     objects.push_back(obj1);
+    objects.push_back(obj2);
 }
 
 // Function to handle window resizing
@@ -313,7 +315,7 @@ void draw_objects()
             glPushMatrix();
             
             // Draw the face
-            glColor4f(1.0, 0, 0, 0.5);
+            glColor4f(1.0, 0, 0, 1);
             glBegin(GL_TRIANGLES);
 
             glNormal3f(normals->at(ind1)(0), normals->at(ind1)(1),
@@ -344,9 +346,11 @@ void draw_objects()
 void physics()
 {
     vector<Vector3d> netNewSpeeds;
+    vector<Vector3d> newPositions;
     for (int i = 0; i < objects.size(); i++) {
         Vector3d zeros(0,0,0);
         netNewSpeeds.push_back(zeros);
+        newPositions.push_back(objects.at(i).getPosition());
     }
     
     /* Handle collision detection first. If two objects collide, calculate their
@@ -370,6 +374,14 @@ void physics()
                 
                 netNewSpeeds.at(i) = netNewSpeeds.at(i) + newVI;
                 netNewSpeeds.at(j) = netNewSpeeds.at(j) + newVJ;
+                
+                // Make sure the objects aren't within each other
+                Vector3d direc = objects.at(j).getPosition() -
+                                 objects.at(i).getPosition();
+                Vector3d obj1Impact = objects.at(i).getFarthestPointInDirection(direc);
+                Vector3d obj2Impact = objects.at(j).getFarthestPointInDirection(direc * -1);
+                Vector3d objInnerDist = objects.at(i).getPosition() - obj1Impact;
+                newPositions.at(i) = obj2Impact + objInnerDist;
             }
         }
     }
@@ -389,6 +401,8 @@ void physics()
         newSpeed = newSpeed * SLOWDOWN;
         
         bool applyGravity = true;
+        //Vector3d pos = objects.at(i).getPosition();
+        Vector3d pos = newPositions.at(i);
         
         // Check if the object has hit any world boundaries, and if it has,
         // alter the object's velocity accordingly.
@@ -398,29 +412,39 @@ void physics()
         for (int j = 0; j < boundaries.size(); j++) {
             if(objects.at(i).collidedWith(&boundaries.at(j))) {
                 float dampen = boundaries.at(j).getDampening();
-                //printf("collision!\n");
+                // Ensure that the object is not within the boundary
+                Vector3d direc = boundaries.at(j).getPosition() -
+                                 objects.at(i).getPosition();
+                Vector3d objBottom = objects.at(i).getFarthestPointInDirection(direc);
+                Vector3d boundTop = boundaries.at(j).getFarthestPointInDirection(direc * -1);
+                Vector3d objInnerDist = objects.at(i).getPosition() - objBottom;
                 switch(boundaries.at(j).getBoundaryType()) {
                     case GROUND:
-                        // If the velocity is low enough, set it to 0 so that
-                        // the object stops bouncing (we assume that the
-                        // velocity here is negative if the object is hitting
-                        // the ground)
-                        if (newSpeed(1) + EPSILON > 0) {
-                            newSpeed(1) = 0;
+                        if (newSpeed(1) <= 0) {
+                            newSpeed(1) = newSpeed(1) * -1 * dampen;
+                        }
+                        if (newSpeed(1) < EPSILON) {
                             // Don't bother applying acceleration due to gravity
                             // if the object is at vertical rest on the ground
                             applyGravity = false;
                         }
+                        pos(1) = boundTop(1) + objInnerDist(1);
+                        break;
                     case CEILING:
-                        newSpeed(1) = newSpeed(1) * -1 * dampen;
+                        if (newSpeed(1) >= 0) {
+                            newSpeed(1) = newSpeed(1) * -1 * dampen;
+                        }
+                        pos(1) = boundTop(1) + objInnerDist(1);
                         break;
                     case WALL_LEFT:
                     case WALL_RIGHT:
                         newSpeed(0) = newSpeed(0) * -1 * dampen;
+                        pos(0) = boundTop(0) + objInnerDist(0);
                         break;
                     case WALL_FRONT:
                     case WALL_BACK:
                         newSpeed(2) = newSpeed(2) * -1 * dampen;
+                        pos(2) = boundTop(2) + objInnerDist(2);
                         break;
                     default:
                         break;
@@ -435,7 +459,6 @@ void physics()
     
         objects.at(i).setVelocity(newSpeed);
         
-        Vector3d pos = objects.at(i).getPosition();
         objects.at(i).setPosition(pos + newSpeed);
         // Need to move the camera with the player
         /*if (i == player) {
@@ -551,7 +574,8 @@ void key_pressed(unsigned char key, int x, int y)
         if (key == 'a' || key == 'A') // Player move left
         {
             // Rotate the direction vector 90 degrees left
-            camDirection = get_rotate_mat(0, 1, 0, deg2rad(90)) * camDirection;
+            camDirection = matrix4to3(get_rotate_mat(0, 1, 0, deg2rad(90)))
+                           * camDirection;
         }
         if (key == 's' || key == 'S') // Player move backward
         {
@@ -561,7 +585,8 @@ void key_pressed(unsigned char key, int x, int y)
         if (key == 'd' || key == 'd') // Player move right
         {
             // Rotate the direction vector 90 degrees right
-            camDirection = get_rotate_mat(0, 1, 0, deg2rad(270)) * camDirection;
+            camDirection = matrix4to3(get_rotate_mat(0, 1, 0, deg2rad(270)))
+                           * camDirection;
         }
         camDirection(1) = 0; // get rid of the y-component
         camDirection.normalize();
@@ -575,6 +600,14 @@ void key_pressed(unsigned char key, int x, int y)
         }
         objects.at(player).setVelocity(newVel);
     }
+    if (key == 32) // Spacebar
+    {
+        Vector3d newVel = objects.at(player).getVelocity();
+        // Need a more sophisticated check to make sure that the player can't
+        // jump in midair (unless we want to call it a feature instead of a bug)
+        if(newVel(1) < 1 && newVel(1) >= 0) newVel(1) = 1;
+        objects.at(player).setVelocity(newVel);
+    }
     glutPostRedisplay();
 }
 
@@ -582,13 +615,13 @@ Vector3d get_camera_direction()
 {
     Vector4d direction(0, 0, 0, 1);
 
-    MatrixXd cameraT = get_translate_mat(cam_position[0],
-                                         cam_position[1],
-                                         cam_position[2]);
-    MatrixXd cameraR = get_rotate_mat(cam_orientation_axis[0],
-                                      cam_orientation_axis[1],
-                                      cam_orientation_axis[2],
-                                      deg2rad(cam_orientation_angle));
+    MatrixXd cameraT = get_translate_mat(-cam_position[0],
+                                         -cam_position[1],
+                                         -cam_position[2]);
+    MatrixXd cameraR = get_rotate_mat(-cam_orientation_axis[0],
+                                      -cam_orientation_axis[1],
+                                      -cam_orientation_axis[2],
+                                      deg2rad(-cam_orientation_angle));
     MatrixXd cameraC = cameraT * cameraR * total_rotate;
     
     direction = cameraC * direction;

@@ -6,6 +6,7 @@
 #include "util.h"
 #include <math.h>
 #include <float.h>
+#include <assert.h>
 #include <vector>
 
 /* Gets the translation matrix for a given translation vector (x, y, z). */
@@ -177,6 +178,7 @@ Vector3d tripleProduct(Vector3d a, Vector3d b, Vector3d c)
 // Returns true if the given simplex s contains the origin, and false otherwise
 bool containsOrigin(vector<Vector3d> *s, Vector3d *d)
 {
+    assert(s->size() <= 4);
     // Get the last point added to the simplex
     Vector3d a = s->back();
     

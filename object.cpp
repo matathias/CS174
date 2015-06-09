@@ -138,7 +138,9 @@ bool Object::collidedWith(Object *o)
     // negate d
     d = d * -1;
     // start looping until we determine whether or not a collision has occured
-    while(true) {
+    // (put a hard cap on this so it doesn't infinitely loop)
+    int cap = 0;
+    while(cap < 20) {
         // Add a new point to the simplex
         Vector3d p1 = this->getFarthestPointInDirection(d);
         Vector3d p2 = o->getFarthestPointInDirection(d * -1);
@@ -159,10 +161,11 @@ bool Object::collidedWith(Object *o)
                 return true;
             }
         }
+        cap++;
     }
     
     // We should never get here, but just so the compiler never complains...
-    return false;
+    return true;
 }
 
 // Fill the object's half-edge data structure

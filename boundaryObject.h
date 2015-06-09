@@ -8,12 +8,12 @@
 #include "object.h"
 
 enum boundary_t {
-    GROUND,
-    WALL_LEFT,
-    WALL_RIGHT,
-    WALL_FRONT,
-    WALL_BACK,
-    CEILING
+    GROUND, // y-component
+    WALL_LEFT, // x-component
+    WALL_RIGHT, // x-component
+    WALL_FRONT, // z-component
+    WALL_BACK, // z-component
+    CEILING // y-component
 };
 
 class BoundaryObject : public Object {
