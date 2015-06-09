@@ -26,7 +26,7 @@
 // Every frame an object's velocity is multiplied by this amount
 #define SLOWDOWN 0.999f
 // Don't make g 9.8 because this applies to every frame, not every second...
-#define G .98f
+#define G .3f
 // Value added to the player's velocity when the player controls their character
 #define MOVEMENTACCEL 0.001f
 // Maximum movement speed for the player character
@@ -72,6 +72,7 @@ void create_lights();
 /******************************************************************************/
 // Global variables
 int xres = 500, yres = 500;
+int drawState = 0;
 
 // Toggle for printing debug values. Set at program initiation.
 bool printDebug = false;
@@ -98,7 +99,7 @@ const double x_view_step = 90.0, y_view_step = 90.0;
 double x_view_angle = 0, y_view_angle = 0;
 
 /*----- Camera globals -----*/
-double cam_position[] = {5, 5, 5};
+double cam_position[] = {0, 5, 5};
 
 double cam_orientation_axis[] = {1, 1, 1};
 
@@ -148,13 +149,13 @@ void init(void)
 // floor with
 void setupObjects()
 {
-    MatrixXd floorScl = get_scale_mat(100, 1, 100);
-    MatrixXd floorRot = get_rotate_mat(0, 1, 0, 0);
+    MatrixXd floorScl = matrix4to3(get_scale_mat(100, 1, 100));
+    MatrixXd floorRot = matrix4to3(get_rotate_mat(0, 1, 0, 0));
     Vector3d floorTrans(0, 0, 0);
     
-    MatrixXd objScl = get_scale_mat(0.5, 0.5, 0.5);
-    MatrixXd objRot = get_rotate_mat(0, 1, 0, 0);
-    Vector3d objTrans1(0, 5, 0);
+    MatrixXd objScl = matrix4to3(get_scale_mat(0.5, 0.5, 0.5));
+    MatrixXd objRot = matrix4to3(get_rotate_mat(0, 1, 0, 0));
+    Vector3d objTrans1(0, 10, 0);
     Vector3d objVel(0, 0, 0);
     
     BoundaryObject floor (floorScl, floorRot, floorTrans, .1, .1, GROUND, .9);
@@ -436,11 +437,11 @@ void physics()
         Vector3d pos = objects.at(i).getPosition();
         objects.at(i).setPosition(pos + newSpeed);
         // Need to move the camera with the player
-        if (i == player) {
+        /*if (i == player) {
             cam_position[0] += newSpeed(0);
             cam_position[1] += newSpeed(1);
             cam_position[2] += newSpeed(2);
-        }
+        }*/
     }
 }
 
@@ -615,6 +616,16 @@ void create_lights()
     lights.push_back(light1);
 }
 
+void continuousAnimation()
+{
+    drawState++;
+    if (drawState >= 50000)
+    {
+        drawState = 0;
+        glutPostRedisplay();
+    }
+}
+
 int main(int argc, char* argv[])
 {
     glutInit(&argc, argv);
@@ -629,6 +640,7 @@ int main(int argc, char* argv[])
     glutReshapeFunc(reshape);
     glutMouseFunc(onMouse);
     glutMotionFunc(onMotion);
+    glutIdleFunc(continuousAnimation);
     glutKeyboardFunc(key_pressed);
 
     glutMainLoop();

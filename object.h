@@ -41,10 +41,10 @@ class Object
         
         // These vectors make up the half-edge data structure that contains the
         // objects faces, vertices, and edges
-        vector<HE*> * halfEdges;
-        vector<HEF*> * halfFaces;
-        vector<HEV*> * halfVertices;
-        vector<Vector3d> * normals;
+        vector<HE*> halfEdges;
+        vector<HEF*> halfFaces;
+        vector<HEV*> halfVertices;
+        vector<Vector3d> normals;
         
         // Helps determine if the object is static or not, since c++ doesn't
         // seem to have object-type detection

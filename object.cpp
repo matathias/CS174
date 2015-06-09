@@ -17,6 +17,7 @@
 #include <math.h>
 #define _USE_MATH_DEFINES
 #include <float.h>
+#include <stdio.h>
 
 // parameterization constants; the higher they are, the more polygons objects
 // will have
@@ -103,22 +104,22 @@ bool Object::isPhysical()
 
 vector<HE*>* Object::getHalfEdges()
 {
-    return halfEdges;
+    return &halfEdges;
 }
 
 vector<HEF*>* Object::getHalfFaces()
 {
-    return halfFaces;
+    return &halfFaces;
 }
 
 vector<HEV*>* Object::getHalfVertices()
 {
-    return halfVertices;
+    return &halfVertices;
 }
 
 vector<Vector3d>* Object::getNormals()
 {
-    return normals;
+    return &normals;
 }
 
 // Collision detection function (makes use of the GJK Algorithm)
@@ -186,7 +187,7 @@ void Object::initializeHalfEdge(MatrixXd scl, MatrixXd rot, Vector3d pos)
 
             pts->push_back(para);
         }
-    } 
+    }
 
     // Because we added the points to pts in a straight-forward manner, we can
     // easily determine what the vertices of the faces should be using the
@@ -221,23 +222,23 @@ void Object::initializeHalfEdge(MatrixXd scl, MatrixXd rot, Vector3d pos)
     }
 
     // Store the points and faces to a half-edge data structure.
-    createHalfVertices(pts, halfVertices);
-    createHalfOthers(faces, halfEdges, halfFaces);
-    int successful = orientFace(halfFaces->at(0), halfFaces, halfVertices);
+    createHalfVertices(pts, &halfVertices);
+    createHalfOthers(faces, &halfEdges, &halfFaces);
+    int successful = orientFace(halfFaces.at(0), &halfFaces, &halfVertices);
     if(successful != 0)
     {
         cerr << "Non-orientable surface." << endl;
         exit(1);
     }
 
-    findAllVertexNormals(normals, halfVertices);
+    findAllVertexNormals(&normals, &halfVertices);
 }
 
 // Update the object's vertices with the given translation vector
 void Object::updateVerticesPos(Vector3d trans)
 {
-    for (int i = 0; i < halfVertices->size(); i++) {
-        HEV *vert = halfVertices->at(i);
+    for (int i = 0; i < halfVertices.size(); i++) {
+        HEV *vert = halfVertices.at(i);
         vert->x = vert->x + trans(0);
         vert->y = vert->y + trans(1);
         vert->z = vert->z + trans(2);
@@ -251,18 +252,18 @@ Vector3d Object::getFarthestPointInDirection(Vector3d d)
     d.normalize();  // make sure that d is a unit vector
     Vector3d ret(0, 0, 0);
     float magnitude = FLT_MIN;
-    for (int i = 0; i < halfVertices->size(); i++) {
-        Vector3d tmp(halfVertices->at(i)->x, halfVertices->at(i)->y,
-                     halfVertices->at(i)->z);
+    for (int i = 0; i < halfVertices.size(); i++) {
+        Vector3d tmp(halfVertices.at(i)->x, halfVertices.at(i)->y,
+                     halfVertices.at(i)->z);
         // Project the point onto the direction vector
         tmp = tmp.dot(d) * d;
         // The magnitude is mathematically identical to the norm; so get the
         // norm and compare to the magnitude. If it's greater, then this point
         // is the farthest point in the direction of d (so far)
         if (tmp.norm() > magnitude) {
-            ret(0) = halfVertices->at(i)->x;
-            ret(1) = halfVertices->at(i)->y;
-            ret(2) = halfVertices->at(i)->z;
+            ret(0) = halfVertices.at(i)->x;
+            ret(1) = halfVertices.at(i)->y;
+            ret(2) = halfVertices.at(i)->z;
             magnitude = tmp.norm();
         }
     }
