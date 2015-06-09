@@ -5,7 +5,7 @@ Repository for our CS174 projects
 Goals -
 + Implement objects <- DONE
 + Give objects physics variables <- DONE
-+ Implement gravity / acceleration in the redraw function / some "physics" subfunction that updates on redraw
++ Implement gravity / acceleration in the redraw function / some "physics" subfunction that updates on redraw <- DONE?
 + Implement object collision / collision physics
  + object collision detection <- DONE
 + Draw "stage" (add walls/invisible floor to test collision/gravity on)
