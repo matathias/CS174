@@ -132,8 +132,8 @@ bool Object::collidedWith(Object *o)
     vector<Vector3d> simplex;
     // Get the first support vector
     Vector3d p1 = this->getFarthestPointInDirection(d);
-    Vector3d p2 = o->getFarthestPointInDirection(d);
-    Vector3d p3 = p1 - p1;
+    Vector3d p2 = o->getFarthestPointInDirection(d * -1);
+    Vector3d p3 = p1 - p2;
     simplex.push_back(p3);
     // negate d
     d = d * -1;
@@ -141,8 +141,8 @@ bool Object::collidedWith(Object *o)
     while(true) {
         // Add a new point to the simplex
         Vector3d p1 = this->getFarthestPointInDirection(d);
-        Vector3d p2 = o->getFarthestPointInDirection(d);
-        Vector3d p3 = p1 - p1;
+        Vector3d p2 = o->getFarthestPointInDirection(d * -1);
+        Vector3d p3 = p1 - p2;
         simplex.push_back(p3);
         // make sure that this point actually passed the origin
         if (simplex.back().dot(d) <= 0) {
@@ -249,24 +249,18 @@ void Object::updateVerticesPos(Vector3d trans)
 // This function is used primarily by the collision detection algorithm
 Vector3d Object::getFarthestPointInDirection(Vector3d d)
 {
-    d.normalize();  // make sure that d is a unit vector
-    Vector3d ret(0, 0, 0);
-    float magnitude = FLT_MIN;
-    for (int i = 0; i < halfVertices.size(); i++) {
+    Vector3d ret(halfVertices.at(0)->x, halfVertices.at(0)->y, 
+                 halfVertices.at(0)->z);
+    float magnitude = ret.dot(d);
+    
+    for (int i = 1; i < halfVertices.size(); i++) {
         Vector3d tmp(halfVertices.at(i)->x, halfVertices.at(i)->y,
                      halfVertices.at(i)->z);
-        // Project the point onto the direction vector
-        tmp = tmp.dot(d) * d;
-        // The magnitude is mathematically identical to the norm; so get the
-        // norm and compare to the magnitude. If it's greater, then this point
-        // is the farthest point in the direction of d (so far)
-        if (tmp.norm() > magnitude) {
-            ret(0) = halfVertices.at(i)->x;
-            ret(1) = halfVertices.at(i)->y;
-            ret(2) = halfVertices.at(i)->z;
-            magnitude = tmp.norm();
+        float dist = d.dot(tmp);
+        if (dist >= magnitude) {
+            ret = tmp;
+            magnitude = dist;
         }
     }
-    
     return ret;
 }

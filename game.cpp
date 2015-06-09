@@ -99,13 +99,13 @@ const double x_view_step = 90.0, y_view_step = 90.0;
 double x_view_angle = 0, y_view_angle = 0;
 
 /*----- Camera globals -----*/
-double cam_position[] = {0, 5, 5};
+double cam_position[] = {0, 7, 10};
 
 double cam_orientation_axis[] = {1, 1, 1};
 
 double cam_orientation_angle = 0; // degrees
 
-double near_param = 1, far_param = 10,
+double near_param = 1, far_param = 20,
       left_param = -1, right_param = 1,
       top_param = 1, bottom_param = -1;
 vector<Point_Light> lights;
@@ -149,7 +149,7 @@ void init(void)
 // floor with
 void setupObjects()
 {
-    MatrixXd floorScl = matrix4to3(get_scale_mat(100, 1, 100));
+    MatrixXd floorScl = matrix4to3(get_scale_mat(10, 1, 10));
     MatrixXd floorRot = matrix4to3(get_rotate_mat(0, 1, 0, 0));
     Vector3d floorTrans(0, 0, 0);
     
@@ -274,7 +274,7 @@ void draw_objects()
             glPushMatrix();
             
             // Draw the face
-            glColor4f(1.0, 0, 0, 0.2);
+            glColor4f(0, 0, 1.0, 0.2);
             glBegin(GL_TRIANGLES);
 
             glNormal3f(normals->at(ind1)(0), normals->at(ind1)(1),
@@ -313,7 +313,7 @@ void draw_objects()
             glPushMatrix();
             
             // Draw the face
-            glColor4f(1.0, 0, 0, 0.2);
+            glColor4f(1.0, 0, 0, 0.5);
             glBegin(GL_TRIANGLES);
 
             glNormal3f(normals->at(ind1)(0), normals->at(ind1)(1),
@@ -398,6 +398,7 @@ void physics()
         for (int j = 0; j < boundaries.size(); j++) {
             if(objects.at(i).collidedWith(&boundaries.at(j))) {
                 float dampen = boundaries.at(j).getDampening();
+                //printf("collision!\n");
                 switch(boundaries.at(j).getBoundaryType()) {
                     case GROUND:
                         // If the velocity is low enough, set it to 0 so that
