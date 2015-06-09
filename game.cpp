@@ -28,11 +28,20 @@
 // Don't make g 9.8 because this applies to every frame, not every second...
 #define G .25f
 // Value added to the player's velocity when the player controls their character
-#define MOVEMENTACCEL 0.01f
+#define MOVEMENTACCEL 0.02f
 // Maximum movement speed for the player character
 #define MOVEMENTSPEEDMAX 2
 
-#define EPSILON 0.00001f
+#define EPSILON 0.0001f
+
+// Set this to 1 to have the camera track and follow the player
+#define TRACKPLAYER 1
+// Set the distance from which the camera will follow the player
+#define TRACKDISTX 0
+#define TRACKDISTY 1
+#define TRACKDISTZ 5
+// The multiplier for rotation speed in TRACKPLAYER mode
+#define ANGLEMULT 0.01f
 
 using namespace std;
 
@@ -99,6 +108,7 @@ double mouse_scale_x, mouse_scale_y;
 const double step_size = 0.2;
 const double x_view_step = 90.0, y_view_step = 90.0;
 double x_view_angle = 0, y_view_angle = 0;
+Vector3d rotAxis(0,1,0);
 
 /*----- Camera globals -----*/
 double cam_position[] = {0, 2, 9};
@@ -106,6 +116,10 @@ double cam_position[] = {0, 2, 9};
 double cam_orientation_axis[] = {1, 1, 1};
 
 double cam_orientation_angle = 0; // degrees
+
+// These values are only use if TRACKPLAYER is 1
+float xAngle = 0;
+float yAngle = 0;
 
 double near_param = 1, far_param = 25,
       left_param = -1, right_param = 1,
@@ -182,9 +196,24 @@ void reshape(int width, int height)
 void display(void)
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    // Handle all of the position and velocity updates
+    physics();
 
     glLoadIdentity();
 
+#if TRACKPLAYER
+    // Using gluLookAt for the camera
+    Vector3d viewPoint = objects.at(player).getPosition();
+    
+    Vector4d camPos(TRACKDISTX, TRACKDISTY, TRACKDISTZ, 1);
+    MatrixXd rot = get_rotate_mat(0, 1, 0, yAngle);
+    MatrixXd trans = get_translate_mat(viewPoint(0), viewPoint(1), viewPoint(2));
+    camPos = trans * rot * camPos;
+    
+    gluLookAt(camPos(0), camPos(1), camPos(2),
+              viewPoint(0), viewPoint(1), viewPoint(2), 
+              0, 1, 0);
+#else
     // Apply camera transformations
     glRotatef(-cam_orientation_angle, cam_orientation_axis[0], 
               cam_orientation_axis[1], cam_orientation_axis[2]);
@@ -196,9 +225,8 @@ void display(void)
                        total_rotate(0,2), total_rotate(1,2), total_rotate(2,2), total_rotate(3,2),
                        total_rotate(0,3), total_rotate(1,3), total_rotate(2,3), total_rotate(3,3)};
     glMultMatrixf(rot);
+#endif
     
-    // Handle all of the position and velocity updates
-    physics();
     
     // Draw the scene
     set_lights();
@@ -460,12 +488,6 @@ void physics()
         objects.at(i).setVelocity(newSpeed);
         
         objects.at(i).setPosition(pos + newSpeed);
-        // Need to move the camera with the player
-        /*if (i == player) {
-            cam_position[0] += newSpeed(0);
-            cam_position[1] += newSpeed(1);
-            cam_position[2] += newSpeed(2);
-        }*/
     }
 }
 
@@ -503,6 +525,16 @@ void onMouse(int button, int state, int x, int y)
 // Function to handle mouse movement
 void onMotion(int x, int y)
 {
+#if TRACKPLAYER
+    if (arcball_on) cur_mx = x;
+    if (cur_mx != last_mx)
+    {
+        yAngle = yAngle + (cur_mx - last_mx)*ANGLEMULT;
+        // Make sure that the angle is within [0, 360)
+        while (yAngle < 0) yAngle += 360;
+        while (yAngle >= 360) yAngle -= 360;
+    }
+#else
     if(arcball_on)
     {
         cur_mx = x;
@@ -518,16 +550,17 @@ void onMotion(int x, int y)
         double value = 1.0f < va.dot(vb) ? 1.0f : va.dot(vb);
         double angle = acos(value);
 
-        Vector3d axis = va.cross(vb);
-
-        MatrixXd rotateMat = get_rotate_mat(axis(0), axis(1), axis(2), angle);
+        rotAxis = va.cross(vb);
+        MatrixXd rotateMat = get_rotate_mat(rotAxis(0), rotAxis(1), rotAxis(2), angle);
         total_rotate = total_rotate * rotateMat;
 
         glutPostRedisplay();
 
         last_mx = cur_mx;
         last_my = cur_my;
+        
     }
+#endif
 }
 // Function to calculate the arcball surface point
 Vector3d get_arcball_vector(int x, int y)
@@ -598,6 +631,7 @@ void key_pressed(unsigned char key, int x, int y)
         if (vel.norm() < MOVEMENTSPEEDMAX) {
             newVel = vel;
         }
+        
         objects.at(player).setVelocity(newVel);
     }
     if (key == 32) // Spacebar
@@ -605,7 +639,7 @@ void key_pressed(unsigned char key, int x, int y)
         Vector3d newVel = objects.at(player).getVelocity();
         // Need a more sophisticated check to make sure that the player can't
         // jump in midair (unless we want to call it a feature instead of a bug)
-        if(newVel(1) < 1 && newVel(1) >= 0) newVel(1) = 1;
+        if(newVel(1) < 1 && newVel(1) >= 0) newVel(1) = 2;
         objects.at(player).setVelocity(newVel);
     }
     glutPostRedisplay();
@@ -613,6 +647,17 @@ void key_pressed(unsigned char key, int x, int y)
 
 Vector3d get_camera_direction()
 {
+#if TRACKPLAYER
+    Vector3d viewPoint = objects.at(player).getPosition();
+    
+    Vector4d camPos(TRACKDISTX, TRACKDISTY, TRACKDISTZ, 1);
+    MatrixXd rot = get_rotate_mat(0, 1, 0, yAngle);
+    MatrixXd trans = get_translate_mat(viewPoint(0), viewPoint(1), viewPoint(2));
+    camPos = trans * rot * camPos;
+    
+    Vector3d direction = objects.at(player).getPosition() - vector4to3(camPos);
+    return direction;
+#else
     Vector4d direction(0, 0, 0, 1);
 
     MatrixXd cameraT = get_translate_mat(-cam_position[0],
@@ -627,6 +672,7 @@ Vector3d get_camera_direction()
     direction = cameraC * direction;
     
     return vector4to3(direction);
+#endif
 }
 
 void create_lights()
