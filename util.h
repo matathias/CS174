@@ -5,8 +5,6 @@
 
 #pragma once
 
-#include "main.hpp"
-
 #include <Eigen/Eigen>
 #include <iostream>
 #include <vector>
@@ -48,7 +46,6 @@ int sign(double s);
 /* These functions exist primarily for use in the collision detection algorithm.
  */
 Vector3d tripleProduct(Vector3d a, Vector3d b, Vector3d c);
-Vector3d support(Object *a, Object *b, Vector3d d);
 // Returns true if the given simplex s contains the origin, and false otherwise
 bool containsOrigin(vector<Vector3d> *s, Vector3d *d);
 
@@ -61,7 +58,7 @@ double square(double val);
 
 // Returns the distance between a and b. Assumes a and b represent points (or
 // the endpoints of the vectors, whatever)
-double distance(Vector3d a, Vector3d b);
+double vectorDistance(Vector3d a, Vector3d b);
 
 // Returns true if every value of a is zero
 bool vecIsZero(Vector3d a);

@@ -282,9 +282,9 @@ double findFaceArea(HEF *hef, vector<HEV*> *halfVertices)
     Vector3d v2(temp2->x, temp2->y, temp2->z);
     Vector3d v3(temp3->x, temp3->y, temp3->z);
 
-    double sideA = distance(v2, v1);
-    double sideB = distance(v3, v2);
-    double sideC = distance(v1, v3);
+    double sideA = vectorDistance(v2, v1);
+    double sideB = vectorDistance(v3, v2);
+    double sideC = vectorDistance(v1, v3);
     double s = (sideA + sideB + sideC) / 2.0;
 
     return sqrt(s * (s - sideA) * (s - sideB) * (s - sideC));
@@ -357,7 +357,9 @@ Vector3d findVertexNormal(HEV *hev, vector<HEV*> *halfVertices)
 
         double area = findFaceArea(incidentFaces->at(i), halfVertices);
 
-        faceNorm = faceNorm + area;
+        faceNorm(0) = faceNorm(0) + area;
+        faceNorm(1) = faceNorm(1) + area;
+        faceNorm(2) = faceNorm(2) + area;
         norm = norm + faceNorm;
     }
 

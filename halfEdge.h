@@ -1,23 +1,20 @@
-#include <iostream>
-#include <sstream>
+
 #include <map>
 #include <utility> // pair
 #include <list>
 #include <vector>
-#include <limits>
-#include <string>
-#include <cstring>
-#include <fstream>
 #include <algorithm> //swap
 #include <cassert>
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <Eigen/Eigen>
 
 #pragma once
-#include "data.h"
 #include "util.h"
+using namespace Eigen;
+using namespace std;
 
 // half edge structure
 typedef struct HE {
@@ -39,11 +36,6 @@ typedef struct HEV {
     double z;
     struct HE * out; // one of the two HEs whose brother points to this vertex
 } HEV;
-
-typedef struct Tvec {
-    double x,y,z;
-} 
-Tvec;
 
 // Uses the Cantor pairing function to return a unique key
 int findKey(int a, int b);

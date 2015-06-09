@@ -4,9 +4,9 @@
  */
 
 #include "util.h"
-#include "Object.h"
 #include <math.h>
 #include <float.h>
+#include <vector>
 
 /* Gets the translation matrix for a given translation vector (x, y, z). */
 MatrixXd get_translate_mat(double x, double y, double z)
@@ -174,14 +174,6 @@ Vector3d tripleProduct(Vector3d a, Vector3d b, Vector3d c)
     return b * (c.dot(a)) - a * (c.dot(b));
 }
 
-Vector3d support(Object *a, Object *b, Vector3d d)
-{
-    Vector3d p1 = a->getFarthestPointInDirection(d);
-    Vector3d p2 = b->getFarthestPointInDirection(d);
-    
-    return p1 - p2;
-}
-
 // Returns true if the given simplex s contains the origin, and false otherwise
 bool containsOrigin(vector<Vector3d> *s, Vector3d *d)
 {
@@ -199,7 +191,7 @@ bool containsOrigin(vector<Vector3d> *s, Vector3d *d)
         // If the origin is in the region bordering triangle ABC
         if (abcNormal.dot(ao) > 0) {
             // Remove point d
-            s->erase(0);
+            s->erase(s->begin());
             // set the new direction to abcNormal
             *d = abcNormal;
         }
@@ -212,7 +204,7 @@ bool containsOrigin(vector<Vector3d> *s, Vector3d *d)
             // If the origin is in the region bordering triangle ABD
             if (abdNormal.dot(ao) > 0) {
                 // Remove point c
-                s->erase(1);
+                s->erase(s->begin()+1);
                 // set the new direction to abdNormal
                 *d = abdNormal;
             }
@@ -224,7 +216,7 @@ bool containsOrigin(vector<Vector3d> *s, Vector3d *d)
                 // If the origin is in the region bordering triangle ACD
                 if (acdNormal.dot(ao) > 0) {
                     // remove point b
-                    s->erase(2);
+                    s->erase(s->begin()+2);
                     // set the new direction to acdNormal
                     *d = acdNormal;
                 }
@@ -272,7 +264,7 @@ double square(double val)
 
 // Returns the distance between a and b. Assumes a and b represent points (or
 // the endpoints of the vectors, whatever)
-double distance(Vector3d a, Vector3d b)
+double vectorDistance(Vector3d a, Vector3d b)
 {
     return sqrt(square(b(0) - a(0)) + square(b(1) - a(1)) + square(b(2) - a(2)));
 }

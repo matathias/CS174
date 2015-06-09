@@ -4,6 +4,8 @@
 #include <Eigen/Eigen>
 #include <vector>
 #include "halfEdge.h"
+using namespace Eigen;
+using namespace std;
  
 class Object
 {
@@ -52,8 +54,8 @@ class Object
         // Method in charge of filling the object's half-edge structure based
         // on the input parameters. This should only ever be called from the
         // object constructor
-        void intializeHalfEdge(MatrixXd scl, MatrixXd rot, Vector3d pos);
+        void initializeHalfEdge(MatrixXd scl, MatrixXd rot, Vector3d pos);
         // updates all of the object's vertices with the given translation
         // vector. Is only ever called from getPosition()
         void updateVerticesPos(Vector3d trans);
-}
+};

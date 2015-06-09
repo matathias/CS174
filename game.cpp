@@ -47,6 +47,7 @@ struct Point_Light
 // Function prototypes
 
 void init(void);
+void setupObjects();
 void reshape(int width, int height);
 void display(void);
 
@@ -96,7 +97,7 @@ const double x_view_step = 90.0, y_view_step = 90.0;
 double x_view_angle = 0, y_view_angle = 0;
 
 /*----- Camera globals -----*/
-double cam_position[] = {0, 0, 2};
+double cam_position[] = {5, 5, 5};
 
 double cam_orientation_axis[] = {1, 1, 1};
 
@@ -134,13 +135,32 @@ void init(void)
               near_param, far_param);
     glMatrixMode(GL_MODELVIEW);
     
-    create_parametric();
-    create_ray_objects();
+    setupObjects();
     create_lights();
 
-    cam_position[2] = zmax + 1;
+    //cam_position[2] = zmax + 1;
     
     init_lights();
+}
+
+// Function to perform the initial setting up of objects. For now it's just a
+// floor with
+void setupObjects()
+{
+    MatrixXd floorScl = get_scale_mat(100, 1, 100);
+    MatrixXd floorRot = get_rotate_mat(0, 1, 0, 0);
+    Vector3d floorTrans(0, 0, 0);
+    
+    MatrixXd objScl = get_scale_mat(0.5, 0.5, 0.5);
+    MatrixXd objRot = get_rotate_mat(0, 1, 0, 0);
+    Vector3d objTrans1(0, 5, 0);
+    Vector3d objVel(0, 0, 0);
+    
+    BoundaryObject floor (floorScl, floorRot, floorTrans, .1, .1, GROUND, .9);
+    PhysicalObject obj1 (objScl, objRot, objTrans1, 1, 1, objVel, 1);
+    
+    boundaries.push_back(floor);
+    objects.push_back(obj1);
 }
 
 // Function to handle window resizing
@@ -321,7 +341,7 @@ void draw_objects()
  */
 void physics()
 {
-    vector<Vector3d> netNewSpeeds = new vector<Vector3d>;
+    vector<Vector3d> netNewSpeeds;
     for (int i = 0; i < objects.size(); i++) {
         Vector3d zeros(0,0,0);
         netNewSpeeds.push_back(zeros);

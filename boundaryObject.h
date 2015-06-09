@@ -18,7 +18,8 @@ enum boundary_t {
 
 class BoundaryObject : public Object {
     public:
-        BoundaryObject(boundary_t b);
+        BoundaryObject(MatrixXd scl, MatrixXd rot, Vector3d pos, float ee, 
+                       float nn, boundary_t b, float d);
         void setBoundaryType(boundary_t b);
         void setDampening(float d);
         boundary_t getBoundaryType();

@@ -128,14 +128,21 @@ bool Object::collidedWith(Object *o)
     // objects' centers
     Vector3d d = position - o->getPosition();
     // Create the simplex vector and add the first point to it
-    vector<Vector3d> simplex = new vector<Vector3d>;
-    simplex.push_back(support(this, o, d));
+    vector<Vector3d> simplex;
+    // Get the first support vector
+    Vector3d p1 = this->getFarthestPointInDirection(d);
+    Vector3d p2 = o->getFarthestPointInDirection(d);
+    Vector3d p3 = p1 - p1;
+    simplex.push_back(p3);
     // negate d
     d = d * -1;
     // start looping until we determine whether or not a collision has occured
     while(true) {
         // Add a new point to the simplex
-        simplex.push_back(support(this, o, d));
+        Vector3d p1 = this->getFarthestPointInDirection(d);
+        Vector3d p2 = o->getFarthestPointInDirection(d);
+        Vector3d p3 = p1 - p1;
+        simplex.push_back(p3);
         // make sure that this point actually passed the origin
         if (simplex.back().dot(d) <= 0) {
             // If this point is not past the origin then the objects have not
@@ -158,17 +165,17 @@ bool Object::collidedWith(Object *o)
 }
 
 // Fill the object's half-edge data structure
-void Object::intializeHalfEdge(MatrixXd scl, MatrixXd rot, Vector3d pos)
+void Object::initializeHalfEdge(MatrixXd scl, MatrixXd rot, Vector3d pos)
 {
-    float du = 2 * M_PI / (float) Nu;
-    float dv = M_PI / (float) Nv;
+    float du = 2 * M_PI / (float) NU;
+    float dv = M_PI / (float) NV;
     vector<Vector3d> *pts = new vector<Vector3d>;
     vector<Vector3d> *faces = new vector<Vector3d>;
 
     // Find all of the 3d points based on the (u,v) parametric values.
-    for (int i = 1; i <= Nu; i++)
+    for (int i = 1; i <= NU; i++)
     {
-        for (int j = 0; j <= Nv; j++)
+        for (int j = 0; j <= NV; j++)
         {
             float u = -M_PI + du * i;
             float v = -M_PI / 2 + dv * j;
@@ -185,19 +192,19 @@ void Object::intializeHalfEdge(MatrixXd scl, MatrixXd rot, Vector3d pos)
     // easily determine what the vertices of the faces should be using the
     // parameterization.
     int ind1 = 0;
-    for (int i = 0; i < Nu; i++)
+    for (int i = 0; i < NU; i++)
     {
-        for (int j = 0; j <= Nv; j++)
+        for (int j = 0; j <= NV; j++)
         {
             Vector3d face1(0,0,0);
             Vector3d face2(0,0,0);
 
-            ind1 = (ind1 + 1) % (Nu * (Nv+1));
-            if (ind1 % (Nv+1) != Nv)
+            ind1 = (ind1 + 1) % (NU * (NV+1));
+            if (ind1 % (NV+1) != NV)
             {
-                int ind2 = (ind1 + 1) % (Nu * (Nv+1));
-                int ind3 = (ind1 + Nv+1) % (Nu * (Nv+1));
-                int ind4 = (ind1 + 1 + Nv+1) % (Nu * (Nv+1));
+                int ind2 = (ind1 + 1) % (NU * (NV+1));
+                int ind3 = (ind1 + NV+1) % (NU * (NV+1));
+                int ind4 = (ind1 + 1 + NV+1) % (NU * (NV+1));
 
                 face1(0) = ind1;
                 face1(1) = ind2;
@@ -244,18 +251,18 @@ Vector3d Object::getFarthestPointInDirection(Vector3d d)
     d.normalize();  // make sure that d is a unit vector
     Vector3d ret(0, 0, 0);
     float magnitude = FLT_MIN;
-    for (int i = 0; i < halfVertices.size(); i++) {
-        Vector3d tmp(halfVertices.at(i)->x, halfVertices.at(i)->y,
-                     halfVertices.at(i)->z);
+    for (int i = 0; i < halfVertices->size(); i++) {
+        Vector3d tmp(halfVertices->at(i)->x, halfVertices->at(i)->y,
+                     halfVertices->at(i)->z);
         // Project the point onto the direction vector
         tmp = tmp.dot(d) * d;
         // The magnitude is mathematically identical to the norm; so get the
         // norm and compare to the magnitude. If it's greater, then this point
         // is the farthest point in the direction of d (so far)
         if (tmp.norm() > magnitude) {
-            ret(0) = halfVertices.at(i)->x;
-            ret(1) = halfVertices.at(i)->y;
-            ret(2) = halfVertices.at(i)->z;
+            ret(0) = halfVertices->at(i)->x;
+            ret(1) = halfVertices->at(i)->y;
+            ret(2) = halfVertices->at(i)->z;
             magnitude = tmp.norm();
         }
     }
