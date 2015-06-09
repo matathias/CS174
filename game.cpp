@@ -56,6 +56,7 @@ void set_lights();
 void draw_objects();
 
 void physics();
+void verletIntegration();
 
 void onMouse(int button, int state, int x, int y);
 void onMotion(int x, int y);
@@ -443,6 +444,11 @@ void physics()
     }
 }
 
+// Common video-game collision physics algorith implementation
+void verletIntegration()
+{
+    
+}
 
 // Simple function to convert an angle in degrees to radians
 double deg2rad(double angle)
