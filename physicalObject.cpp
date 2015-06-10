@@ -24,6 +24,7 @@ PhysicalObject::PhysicalObject(MatrixXd scl, MatrixXd rot, Vector3d pos,
     mass = m;
     physical = true;
     hitstun_timer = 0;
+    grounded = false;
 }
 
 // Manipulator functions
@@ -61,4 +62,14 @@ int PhysicalObject::set_hitstun()
 int PhysicalObject::reduce_hitstun()
 {
     hitstun_timer--;
+}
+
+bool PhysicalObject::get_grounded()
+{
+    return grounded;
+}
+
+void PhysicalObject::set_grounded(bool temp)
+{
+    grounded = temp;
 }

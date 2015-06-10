@@ -33,7 +33,7 @@
 // Maximum movement speed for the player character
 #define MOVEMENTSPEEDMAX .7
 
-#define EPSILON 0.0001f
+#define EPSILON 0.01f
 
 // Set the distance from which the camera will follow the player
 #define TRACKDISTX 0
@@ -86,6 +86,7 @@ int drawState = 0;
 
 int groundtmp = 0;
 int score;
+int tempiterator = 0;
 
 // Toggle for printing debug values. Set at program initiation.
 bool printDebug = false;
@@ -170,18 +171,18 @@ void init(void)
 // floor with a pair of balls
 void setupObjects()
 {
-    MatrixXd floorScl = matrix4to3(get_scale_mat(25, 5, 25));
+    MatrixXd floorScl = matrix4to3(get_scale_mat(25, 1, 25));
     MatrixXd floorRot = matrix4to3(get_rotate_mat(0, 1, 0, 0));
     Vector3d floorTrans(0, -5, 0);
     Vector3d floorRGB(0.1, 0.1, 0.1);
     
-    MatrixXd wallLRScl = matrix4to3(get_scale_mat(4, 25, 25));
+    MatrixXd wallLRScl = matrix4to3(get_scale_mat(1, 25, 25));
     MatrixXd wallLRRot = matrix4to3(get_rotate_mat(0, 1, 0, 0));
     Vector3d wallRTrans(14.5, 12, 0);
     Vector3d wallLTrans(-14.5, 12, 0);
     Vector3d wallRGB(0.2, 0.2, 0.2);
     
-    MatrixXd wallFBScl = matrix4to3(get_scale_mat(4, 25, 25));
+    MatrixXd wallFBScl = matrix4to3(get_scale_mat(1, 25, 25));
     MatrixXd wallFBRot = matrix4to3(get_rotate_mat(0, 1, 0, deg2rad(90)));
     Vector3d wallFTrans(0, 12, 14.5);
     Vector3d wallBTrans(0, 12, -14.5);
@@ -315,7 +316,7 @@ void display_all_text()
     strcat(scoretxt2, scoretxt);
 
     draw_text(10, yres - 20, scoretxt2);    
-    draw_text(10, yres - 40, "I bet Davy will S-rank the new not-Severa");    
+    draw_text(10, yres - 40, "Davy S-ranked Tharja");    
 
 }
 
@@ -495,7 +496,8 @@ void physics()
             if(objects.at(i).collidedWith(&objects.at(j))) {
                 // Test for "enemy hit detection"
                 score+=100;
-                objects.at(j).set_hitstun();            
+                objects.at(j).set_hitstun();
+       //         printf("Collided with %d\n", j);            
 
                 float mI = objects.at(i).getMass();
                 float mJ = objects.at(j).getMass();
@@ -543,27 +545,27 @@ void physics()
         // something more complex...
         for (int j = 0; j < boundaries.size(); j++) {
             if(objects.at(i).collidedWith(&boundaries.at(j))) {
+                objects.at(i).set_grounded(false);
                 float dampen = boundaries.at(j).getDampening();
                 // Ensure that the object is not within the boundary
                 Vector3d objBottom, objInnerDist;
                 Vector3d direc(0, 0, 0);
                 float newPos = 0;
-                switch(boundaries.at(j).getBoundaryType()) {
+                switch(boundaries.at(j).getBoundaryType()) {                    
                     case GROUND:
-                        if (newSpeed(1) <= 0) {
-                            newSpeed(1) = newSpeed(1) * -1 * dampen;
-                        }
                         if (newSpeed(1) < EPSILON) {
                             // Don't bother applying acceleration due to gravity
                             // if the object is at vertical rest on the ground
-                            applyGravity = false;
+                            objects.at(i).set_grounded(true);
                         }
-                        direc(1) = -1;
+                        if (newSpeed(1) <= 0) {
+                            newSpeed(1) = newSpeed(1) * -1 * dampen;
+                        }
+                        direc(1) = -1;                        
                         objBottom = objects.at(i).getFarthestPointInDirection(direc);
                         objInnerDist = objects.at(i).getPosition() - objBottom;
-                        newPos = boundaries.at(j).getBoundary() + objInnerDist(1);
+                        newPos = boundaries.at(j).getBoundary() + objInnerDist(1);                    
                         if (newPos > pos(1)) pos(1) = newPos;
-                        jumped = false;
                         break;
                     case CEILING:
                         if (newSpeed(1) >= 0) {
@@ -787,9 +789,9 @@ void key_pressed(unsigned char key, int x, int y)
         Vector3d newVel = objects.at(player).getVelocity();
         // Need a more sophisticated check to make sure that the player can't
         // jump in midair (unless we want to call it a feature instead of a bug)
-        if(newVel(1) < 1 && newVel(1) >= 0) {
+        if(newVel(1) < 1 && objects.at(player).get_grounded()) {
             newVel(1) = 2;
-            jumped = true;
+            objects.at(player).set_grounded(false);
         }
         objects.at(player).setVelocity(newVel);
     }

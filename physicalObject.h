@@ -18,9 +18,12 @@ class PhysicalObject : public Object {
 	int get_hitstun();
 	int set_hitstun();
 	int reduce_hitstun();
+	bool get_grounded();
+	void set_grounded(bool temp);
     
     protected:
         Vector3d velocity;
         float mass;
 	int hitstun_timer;
+	bool grounded;
 };
