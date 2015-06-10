@@ -15,8 +15,12 @@ class PhysicalObject : public Object {
         void setMass(float m);
         Vector3d getVelocity();
         float getMass();
+	int get_hitstun();
+	int set_hitstun();
+	int reduce_hitstun();
     
     protected:
         Vector3d velocity;
         float mass;
+	int hitstun_timer;
 };

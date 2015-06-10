@@ -21,8 +21,8 @@
 
 // parameterization constants; the higher they are, the more polygons objects
 // will have
-#define NU 40
-#define NV 40
+#define NU 25
+#define NV 25
 
 #include "object.h"
 #include "util.h"

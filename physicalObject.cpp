@@ -23,6 +23,7 @@ PhysicalObject::PhysicalObject(MatrixXd scl, MatrixXd rot, Vector3d pos,
     velocity = vel;
     mass = m;
     physical = true;
+    hitstun_timer = 0;
 }
 
 // Manipulator functions
@@ -45,4 +46,19 @@ Vector3d PhysicalObject::getVelocity()
 float PhysicalObject::getMass()
 {
     return mass;
+}
+
+int PhysicalObject::get_hitstun()
+{
+    return hitstun_timer;
+}
+
+int PhysicalObject::set_hitstun()
+{
+    hitstun_timer = 5;
+}
+
+int PhysicalObject::reduce_hitstun()
+{
+    hitstun_timer--;
 }
