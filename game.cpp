@@ -148,6 +148,7 @@ void init(void)
 
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
+    glFrontFace(GL_CW);
 
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_NORMAL_ARRAY);
@@ -180,8 +181,8 @@ void setupObjects()
     Vector3d wallLTrans(-14.5, 12, 0);
     Vector3d wallRGB(0.2, 0.2, 0.2);
     
-    MatrixXd wallFBScl = matrix4to3(get_scale_mat(25, 25, 4));
-    MatrixXd wallFBRot = matrix4to3(get_rotate_mat(0, 1, 0, 0));
+    MatrixXd wallFBScl = matrix4to3(get_scale_mat(4, 25, 25));
+    MatrixXd wallFBRot = matrix4to3(get_rotate_mat(0, 1, 0, deg2rad(90)));
     Vector3d wallFTrans(0, 12, 14.5);
     Vector3d wallBTrans(0, 12, -14.5);
     
@@ -195,7 +196,7 @@ void setupObjects()
     
     BoundaryObject floor (floorScl, floorRot, floorTrans, floorRGB, 1, .1, .1, GROUND, .9);
     BoundaryObject wallR (wallLRScl, wallLRRot, wallRTrans, wallRGB, 1, .1, .1, WALL_RIGHT, .95);
-    BoundaryObject wallB (wallFBScl, wallFBRot, wallBTrans, wallRGB, 1, .1, .1, WALL_BACK, .95);
+    BoundaryObject wallB (wallFBScl, wallFBRot, wallBTrans, wallRGB, 1, .01, .01, WALL_BACK, .95);
     PhysicalObject obj1 (objScl, objRot, objTrans1, objRGB1, 1, 1, 1, objVel, 1);
     PhysicalObject obj2 (objScl, objRot, objTrans2, objRGB2, 1, 1, 1, objVel, 1);
     
@@ -313,7 +314,7 @@ void display_all_text()
     strcat(scoretxt2, scoretxt);
 
     draw_text(10, 30, scoretxt2);    
-    draw_text(10, 10, "Davy's waifu is still Tharja~ Kyaah~");    
+    draw_text(10, 10, "Vy-luan is a filthy deviant weeb");    
 
 }
 
