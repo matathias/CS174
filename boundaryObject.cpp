@@ -30,6 +30,41 @@ BoundaryObject::BoundaryObject(MatrixXd scl, MatrixXd rot, Vector3d pos, Vector3
         dampening = d;
     else
         dampening = 0.9;
+        
+    int ind = 0;
+    int sign = 1;
+    Vector3d direc(0, 0, 0);
+    switch (bot) {
+        case GROUND:
+            direc(1) = 1;
+            ind = 1;
+            break;
+        case CEILING:
+            direc(1) = -1;
+            ind = 1;
+            break;
+        case WALL_LEFT:
+            direc(0) = 1;
+            ind = 0;
+            break;
+        case WALL_RIGHT:
+            direc(0) = -1;
+            ind = 0;
+            break;
+        case WALL_FRONT:
+            direc(2) = 1;
+            ind = 2;
+            break;
+        case WALL_BACK:
+            direc(2) = -1;
+            ind = 2;
+            break;
+        default:
+            direc(0) = 0;
+            break;
+    }
+    Vector3d point = this->getFarthestPointInDirection(direc);
+    boundary = point(ind);
 }
 
 // Get functions
@@ -41,6 +76,11 @@ boundary_t BoundaryObject::getBoundaryType()
 float BoundaryObject::getDampening()
 {
     return dampening;
+}
+
+float BoundaryObject::getBoundary()
+{
+    return boundary;
 }
 
 // Set functions
