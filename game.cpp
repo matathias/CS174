@@ -27,7 +27,7 @@
 // Every frame an object's velocity is multiplied by this amount
 #define SLOWDOWN 0.99f
 // Don't make g 9.8 because this applies to every frame, not every second...
-#define G .25f
+#define G .2f
 // Value added to the player's velocity when the player controls their character
 #define MOVEMENTACCEL 0.02f
 // Maximum movement speed for the player character
@@ -35,8 +35,6 @@
 
 #define EPSILON 0.0001f
 
-// Set this to 1 to have the camera track and follow the player
-#define TRACKPLAYER 1
 // Set the distance from which the camera will follow the player
 #define TRACKDISTX 0
 #define TRACKDISTY 1
@@ -176,6 +174,17 @@ void setupObjects()
     Vector3d floorTrans(0, -5, 0);
     Vector3d floorRGB(0.1, 0.1, 0.1);
     
+    MatrixXd wallLRScl = matrix4to3(get_scale_mat(4, 25, 25));
+    MatrixXd wallLRRot = matrix4to3(get_rotate_mat(0, 1, 0, 0));
+    Vector3d wallRTrans(14.5, 12, 0);
+    Vector3d wallLTrans(-14.5, 12, 0);
+    Vector3d wallRGB(0.2, 0.2, 0.2);
+    
+    MatrixXd wallFBScl = matrix4to3(get_scale_mat(25, 25, 4));
+    MatrixXd wallFBRot = matrix4to3(get_rotate_mat(0, 1, 0, 0));
+    Vector3d wallFTrans(0, 12, 14.5);
+    Vector3d wallBTrans(0, 12, -14.5);
+    
     MatrixXd objScl = matrix4to3(get_scale_mat(0.5, 0.5, 0.5));
     MatrixXd objRot = matrix4to3(get_rotate_mat(0, 1, 0, 0));
     Vector3d objTrans1(0, 8, 0);
@@ -185,10 +194,14 @@ void setupObjects()
     Vector3d objRGB2(1, 0, 0);
     
     BoundaryObject floor (floorScl, floorRot, floorTrans, floorRGB, 1, .1, .1, GROUND, .9);
+    BoundaryObject wallR (wallLRScl, wallLRRot, wallRTrans, wallRGB, 1, .1, .1, WALL_RIGHT, .95);
+    BoundaryObject wallB (wallFBScl, wallFBRot, wallBTrans, wallRGB, 1, .1, .1, WALL_BACK, .95);
     PhysicalObject obj1 (objScl, objRot, objTrans1, objRGB1, 1, 1, 1, objVel, 1);
     PhysicalObject obj2 (objScl, objRot, objTrans2, objRGB2, 1, 1, 1, objVel, 1);
     
     boundaries.push_back(floor);
+    boundaries.push_back(wallR);
+    boundaries.push_back(wallB);
     objects.push_back(obj1);
     objects.push_back(obj2);
 }
@@ -343,10 +356,10 @@ void draw_objects()
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
     glEnable(GL_COLOR_MATERIAL);
-    glEnable(GL_BLEND);
+    //glEnable(GL_BLEND);
     glEnable(GL_LINE_SMOOTH);
     glEnable(GL_POLYGON_SMOOTH);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     float colrs1[3]; float colrs2[3]; float colrs3[3]; 
     colrs1[0]=.5; colrs1[1]=.5; colrs1[2]=.5;
@@ -517,11 +530,9 @@ void physics()
             if(objects.at(i).collidedWith(&boundaries.at(j))) {
                 float dampen = boundaries.at(j).getDampening();
                 // Ensure that the object is not within the boundary
-                Vector3d direc = boundaries.at(j).getPosition() -
-                                 objects.at(i).getPosition();
-                Vector3d objBottom = objects.at(i).getFarthestPointInDirection(direc);
-                Vector3d boundTop = boundaries.at(j).getFarthestPointInDirection(direc * -1);
-                Vector3d objInnerDist = objects.at(i).getPosition() - objBottom;
+                Vector3d objBottom, objInnerDist;
+                Vector3d direc(0, 0, 0);
+                float newPos = 0;
                 switch(boundaries.at(j).getBoundaryType()) {
                     case GROUND:
                         if (newSpeed(1) <= 0) {
@@ -532,24 +543,62 @@ void physics()
                             // if the object is at vertical rest on the ground
                             applyGravity = false;
                         }
-                        pos(1) = boundTop(1) + objInnerDist(1);
+                        direc(1) = -1;
+                        objBottom = objects.at(i).getFarthestPointInDirection(direc);
+                        objInnerDist = objects.at(i).getPosition() - objBottom;
+                        newPos = boundaries.at(j).getBoundary() + objInnerDist(1);
+                        if (newPos > pos(1)) pos(1) = newPos;
                         jumped = false;
                         break;
                     case CEILING:
                         if (newSpeed(1) >= 0) {
                             newSpeed(1) = newSpeed(1) * -1 * dampen;
                         }
-                        pos(1) = boundTop(1) + objInnerDist(1);
+                        direc(1) = 1;
+                        objBottom = objects.at(i).getFarthestPointInDirection(direc);
+                        objInnerDist = objects.at(i).getPosition() - objBottom;
+                        pos(1) = boundaries.at(j).getBoundary() + objInnerDist(1);
+                        if (newPos < pos(1)) pos(1) = newPos;
                         break;
                     case WALL_LEFT:
+                        if (newSpeed(0) <= 0) {
+                            newSpeed(0) = newSpeed(0) * -1 * dampen;
+                        }
+                        direc(0) = -1;
+                        objBottom = objects.at(i).getFarthestPointInDirection(direc);
+                        objInnerDist = objects.at(i).getPosition() - objBottom;
+                        newPos = boundaries.at(j).getBoundary() + objInnerDist(0);
+                        if (newPos > pos(0)) pos(0) = newPos;
+                        break;
                     case WALL_RIGHT:
-                        newSpeed(0) = newSpeed(0) * -1 * dampen;
-                        pos(0) = boundTop(0) + objInnerDist(0);
+                        if (newSpeed(0) >= 0) {
+                            newSpeed(0) = newSpeed(0) * -1 * dampen;
+                        }
+                        direc(0) = 1;
+                        objBottom = objects.at(i).getFarthestPointInDirection(direc);
+                        objInnerDist = objects.at(i).getPosition() - objBottom;
+                        newPos = boundaries.at(j).getBoundary() + objInnerDist(0);
+                        if (newPos < pos(0)) pos(0) = newPos;
                         break;
                     case WALL_FRONT:
+                        if (newSpeed(2) >= 0) {
+                            newSpeed(2) = newSpeed(2) * -1 * dampen;
+                        }
+                        direc(2) = 1;
+                        objBottom = objects.at(i).getFarthestPointInDirection(direc);
+                        objInnerDist = objects.at(i).getPosition() - objBottom;
+                        newPos = boundaries.at(j).getBoundary() + objInnerDist(2);
+                        if (newPos < pos(2)) pos(2) = newPos;
+                        break;
                     case WALL_BACK:
-                        newSpeed(2) = newSpeed(2) * -1 * dampen;
-                        pos(2) = boundTop(2) + objInnerDist(2);
+                        if (newSpeed(2) <= 0) {
+                            newSpeed(2) = newSpeed(2) * -1 * dampen;
+                        }
+                        direc(2) = -1;
+                        objBottom = objects.at(i).getFarthestPointInDirection(direc);
+                        objInnerDist = objects.at(i).getPosition() - objBottom;
+                        newPos = boundaries.at(j).getBoundary() + objInnerDist(2);
+                        if (newPos > pos(2)) pos(2) = newPos;
                         break;
                     default:
                         break;

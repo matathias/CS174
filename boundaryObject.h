@@ -24,8 +24,10 @@ class BoundaryObject : public Object {
         void setDampening(float d);
         boundary_t getBoundaryType();
         float getDampening();
+        float getBoundary();
     
     protected:
         boundary_t bot;
         float dampening;
+        float boundary;
 };
