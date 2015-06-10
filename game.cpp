@@ -37,7 +37,7 @@
 
 // Set the distance from which the camera will follow the player
 #define TRACKDISTX 0
-#define TRACKDISTY 1
+#define TRACKDISTY 1.5f
 #define TRACKDISTZ 5
 // The multiplier for rotation speed in TRACKPLAYER mode
 #define ANGLEMULT 0.001f
@@ -786,6 +786,20 @@ void key_pressed(unsigned char key, int x, int y)
     glutPostRedisplay();
 }
 
+void specialInput(int key, int x, int y)
+{
+    if (key == GLUT_KEY_LEFT && trackPlayer)
+    {
+        yAngle += 20 * ANGLEMULT;
+    }
+    if (key == GLUT_KEY_RIGHT && trackPlayer)
+    {
+        yAngle -= 20 * ANGLEMULT;
+    }
+    
+    glutPostRedisplay();
+}
+
 Vector3d get_camera_direction()
 {
     Vector3d direction(0, 0, 0);
@@ -866,6 +880,7 @@ int main(int argc, char* argv[])
     glutMotionFunc(onMotion);
     glutIdleFunc(continuousAnimation);
     glutKeyboardFunc(key_pressed);
+    glutSpecialFunc(specialInput);
 
     glutMainLoop();
 }
