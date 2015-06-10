@@ -29,9 +29,9 @@
 // Don't make g 9.8 because this applies to every frame, not every second...
 #define G .2f
 // Value added to the player's velocity when the player controls their character
-#define MOVEMENTACCEL 0.02f
+#define MOVEMENTACCEL 0.2f
 // Maximum movement speed for the player character
-#define MOVEMENTSPEEDMAX 2
+#define MOVEMENTSPEEDMAX .7
 
 #define EPSILON 0.0001f
 
@@ -167,7 +167,7 @@ void init(void)
 }
 
 // Function to perform the initial setting up of objects. For now it's just a
-// floor with
+// floor with a pair of balls
 void setupObjects()
 {
     MatrixXd floorScl = matrix4to3(get_scale_mat(25, 5, 25));
@@ -260,8 +260,9 @@ void display(void)
     // Draw the scene
     set_lights();
     draw_objects();
-    display_all_text();    
-    
+
+    display_all_text();        
+
     glutSwapBuffers();
     
     // Code for counting FPS
@@ -313,8 +314,8 @@ void display_all_text()
     strcpy(scoretxt2, "Score: ");
     strcat(scoretxt2, scoretxt);
 
-    draw_text(10, 30, scoretxt2);    
-    draw_text(10, 10, "Vy-luan is a filthy deviant weeb");    
+    draw_text(10, yres - 20, scoretxt2);    
+    draw_text(10, yres - 40, "I bet Davy will S-rank the new not-Severa");    
 
 }
 
@@ -381,6 +382,16 @@ void draw_objects()
         vector<HEV*> *halfVertices = objects.at(j).getHalfVertices();
         vector<Vector3d> *normals = objects.at(j).getNormals();
         Vector3d RGB = objects.at(j).getRGB();
+        
+        // If object was just hit
+        if(objects.at(j).get_hitstun() > 0)
+        {
+            RGB(0) = 1.0;
+            RGB(1) = 1.0;
+            RGB(2) = 0.8;
+            objects.at(j).reduce_hitstun();
+        }
+
         float alpha = objects.at(j).getAlpha();
         
         for (int i = 0; i < halfFaces->size(); i++)
@@ -482,7 +493,10 @@ void physics()
         // we don't compare an object to itself.
         for (int j = i+1; j < objects.size(); j++) {
             if(objects.at(i).collidedWith(&objects.at(j))) {
-                score++;
+                // Test for "enemy hit detection"
+                score+=100;
+                objects.at(j).set_hitstun();            
+
                 float mI = objects.at(i).getMass();
                 float mJ = objects.at(j).getMass();
                 Vector3d vI = objects.at(i).getVelocity();
