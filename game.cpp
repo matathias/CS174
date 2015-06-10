@@ -29,9 +29,9 @@
 // Don't make g 9.8 because this applies to every frame, not every second...
 #define G .2f
 // Value added to the player's velocity when the player controls their character
-#define MOVEMENTACCEL 0.3f
+#define MOVEMENTACCEL 0.2f
 // Maximum movement speed for the player character
-#define MOVEMENTSPEEDMAX .75
+#define MOVEMENTSPEEDMAX .7
 
 #define EPSILON 0.0001f
 
@@ -260,8 +260,9 @@ void display(void)
     // Draw the scene
     set_lights();
     draw_objects();
-    display_all_text();    
-    
+
+    display_all_text();        
+
     glutSwapBuffers();
     
     // Code for counting FPS
@@ -313,8 +314,8 @@ void display_all_text()
     strcpy(scoretxt2, "Score: ");
     strcat(scoretxt2, scoretxt);
 
-    draw_text(10, 30, scoretxt2);    
-    draw_text(10, 10, "Vy-luan is a filthy deviant weeb");    
+    draw_text(10, yres - 20, scoretxt2);    
+    draw_text(10, yres - 40, "I bet Davy will S-rank the new not-Severa");    
 
 }
 
