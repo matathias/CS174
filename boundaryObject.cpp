@@ -21,8 +21,9 @@
 
 /********** Member function definitions **********/
 // Constructor
-BoundaryObject::BoundaryObject(MatrixXd scl, MatrixXd rot, Vector3d pos, float ee, 
-                               float nn, boundary_t b, float d) : Object(scl, rot, pos, ee, nn)
+BoundaryObject::BoundaryObject(MatrixXd scl, MatrixXd rot, Vector3d pos, Vector3d rgb, 
+                               float a, float ee, float nn, boundary_t b, float d) : 
+                               Object(scl, rot, pos, rgb, a, ee, nn)
 {
     bot = b;
     if (d <= 1 && d >= 0)

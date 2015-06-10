@@ -21,15 +21,16 @@
 
 // parameterization constants; the higher they are, the more polygons objects
 // will have
-#define NU 80
-#define NV 80
+#define NU 40
+#define NV 40
 
 #include "object.h"
 #include "util.h"
 
 /********** Member function definitions **********/
 // Constructor
-Object::Object(MatrixXd scl, MatrixXd rot, Vector3d pos, float ee, float nn)
+Object::Object(MatrixXd scl, MatrixXd rot, Vector3d pos, Vector3d rgb, float a,
+               float ee, float nn)
 {
     position = pos;
     scale = scl;
@@ -37,6 +38,9 @@ Object::Object(MatrixXd scl, MatrixXd rot, Vector3d pos, float ee, float nn)
     
     e = ee;
     n = nn;
+    
+    RGB = rgb;
+    alpha = a;
     
     physical = false;
     
@@ -71,6 +75,16 @@ void Object::setN(float nn)
     n = nn;
 }
 
+void Object::setRGB(Vector3d rgb)
+{
+    RGB = rgb;
+}
+
+void Object::setAlpha(float a)
+{
+    alpha = a;
+}
+
 // "Get" functions
 Vector3d Object::getPosition()
 {
@@ -95,6 +109,16 @@ float Object::getE()
 float Object::getN()
 {
     return n;
+}
+
+Vector3d Object::getRGB()
+{
+    return RGB;
+}
+
+float Object::getAlpha()
+{
+    return alpha;
 }
 
 bool Object::isPhysical()

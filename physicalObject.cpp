@@ -16,8 +16,9 @@
 
 /********** Member function definitions **********/
 // Constructor
-PhysicalObject::PhysicalObject(MatrixXd scl, MatrixXd rot, Vector3d pos, float ee, 
-                               float nn, Vector3d vel, float m) : Object(scl, rot, pos, ee, nn)
+PhysicalObject::PhysicalObject(MatrixXd scl, MatrixXd rot, Vector3d pos, 
+                               Vector3d rgb, float a, float ee, 
+                               float nn, Vector3d vel, float m) : Object(scl, rot, pos, rgb, a, ee, nn)
 {
     velocity = vel;
     mass = m;

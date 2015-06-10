@@ -10,17 +10,22 @@ using namespace std;
 class Object
 {
     public:
-        Object(MatrixXd scl, MatrixXd rot, Vector3d pos, float ee, float nn);
+        Object(MatrixXd scl, MatrixXd rot, Vector3d pos, Vector3d rgb, float a,
+               float ee, float nn);
         void setPosition(Vector3d pos);
         void setScale(MatrixXd scl);
         void setRotate(MatrixXd rot);
         void setE(float ee);
         void setN(float nn);
+        void setRGB(Vector3d rgb);
+        void setAlpha(float a);
         Vector3d getPosition();
         MatrixXd getScale();
         MatrixXd getRotate();
         float getE();
         float getN();
+        Vector3d getRGB();
+        float getAlpha();
         vector<HE*>* getHalfEdges();
         vector<HEF*>* getHalfFaces();
         vector<HEV*>* getHalfVertices();
@@ -49,6 +54,10 @@ class Object
         // Helps determine if the object is static or not, since c++ doesn't
         // seem to have object-type detection
         bool physical;
+        
+        // RGB and Alpha values for the object. Used for rendering
+        Vector3d RGB;
+        float alpha;
         
     private:
         // Method in charge of filling the object's half-edge structure based

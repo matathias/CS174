@@ -9,8 +9,8 @@
 
 class PhysicalObject : public Object {
     public:
-        PhysicalObject(MatrixXd scl, MatrixXd rot, Vector3d pos, float ee, 
-                       float nn, Vector3d vel, float m);
+        PhysicalObject(MatrixXd scl, MatrixXd rot, Vector3d pos, Vector3d rgb,
+                       float a, float ee, float nn, Vector3d vel, float m);
         void setVelocity(Vector3d vel);
         void setMass(float m);
         Vector3d getVelocity();
