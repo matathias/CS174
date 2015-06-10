@@ -67,6 +67,8 @@ void draw_objects();
 
 void physics();
 void verletIntegration();
+void draw_text(int x, int y, string target);
+void display_all_text();
 
 void onMouse(int button, int state, int x, int y);
 void onMotion(int x, int y);
@@ -85,6 +87,7 @@ int xres = 500, yres = 500;
 int drawState = 0;
 
 int groundtmp = 0;
+int score;
 
 // Toggle for printing debug values. Set at program initiation.
 bool printDebug = false;
@@ -243,6 +246,7 @@ void display(void)
     // Draw the scene
     set_lights();
     draw_objects();
+    display_all_text();    
     
     glutSwapBuffers();
     
@@ -283,6 +287,53 @@ void set_lights()
         
         glLightfv(light_id, GL_POSITION, lights[i].position);
     }
+}
+
+// Contains all draw_text calls for convenience.
+void display_all_text()
+{
+    char scoretxt[10];
+    sprintf(scoretxt, "%d", score);
+
+    char scoretxt2[20];
+    strcpy(scoretxt2, "Score: ");
+    strcat(scoretxt2, scoretxt);
+
+    draw_text(10, 30, scoretxt2);    
+    draw_text(10, 10, "Davy's waifu is still Tharja~ Kyaah~");    
+
+}
+
+// Draws the text used for hp, score, etc. Exactly what it says on the tin.
+void draw_text(int x, int y, string target)
+{
+    glDisable(GL_TEXTURE_2D);
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    gluOrtho2D(0.0, xres, 0.0, yres);
+
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+    glColor3f(0.0f, 1.0f, 0.0f);
+
+    glRasterPos2i(x, y);
+    void * font = GLUT_BITMAP_9_BY_15;
+    for (string::iterator i = target.begin(); i != target.end(); ++i)
+    {
+        char c = *i;
+        glutBitmapCharacter(font, c);
+    }  
+
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+
+    glMatrixMode(GL_MODELVIEW);
+    glPopMatrix();
+
+    glEnable(GL_TEXTURE_2D);
+   
 }
 
 // Function to actually render objects to the screen
@@ -417,6 +468,7 @@ void physics()
         // we don't compare an object to itself.
         for (int j = i+1; j < objects.size(); j++) {
             if(objects.at(i).collidedWith(&objects.at(j))) {
+                score++;
                 float mI = objects.at(i).getMass();
                 float mJ = objects.at(j).getMass();
                 Vector3d vI = objects.at(i).getVelocity();
